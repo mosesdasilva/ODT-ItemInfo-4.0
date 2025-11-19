@@ -26,7 +26,7 @@ public record ModMetadata : AbstractModMetadata
     public override string Author { get; init; } = "ODT";
     public override List<string>? Contributors { get; init; }
     public override SemanticVersioning.Version Version { get; init; } = new("2.0.3");
-    public override SemanticVersioning.Range SptVersion { get; init; } = new("~4.0.4");
+    public override SemanticVersioning.Range SptVersion { get; init; } = new("~4.0.0");
     public override List<string>? Incompatibilities { get; init; }
     public override Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
     public override string? Url { get; init; }
@@ -667,6 +667,8 @@ public class ItemInfo(
 	    StringBuilder itemName = new StringBuilder();
 	    StringBuilder logString = new StringBuilder();
 	    StringBuilder tiersHexcode = new StringBuilder();
+	    StringBuilder addToName = new StringBuilder();
+	    StringBuilder addToShortName = new StringBuilder();
 	    
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
@@ -688,20 +690,9 @@ public class ItemInfo(
 		    tiersHexcode.Clear();
 		    itemName.Clear();
 		    logString.Clear();
+		    addToName.Clear();
+		    addToShortName.Clear();
 		    
-		    itemName.Append(Utils.GetItemName(kvp.Key));
-
-#if DEBUG
-			logString.Append("Processing item " +
-										 (a + 1) +
-										 "/" +
-										 Items.Count +
-										 ": " +
-										 itemName);
-
-		    logger.Info(logString.ToString());
-		    a += 1;
-#endif
 		    MongoId itemId = kvp.Key;
 		    TemplateItem templateItem = kvp.Value;
 		    HandbookItem? itemInHandbook = Utils.GetItemInHandbook(itemId);
@@ -742,6 +733,21 @@ public class ItemInfo(
 		    
 		    Utils.RefreshName(itemId, UserLocale);
 		    Utils.RefreshShortName(itemId, UserLocale);
+		    
+		    itemName.Append(Utils.GetItemName(kvp.Key));
+		    itemName.Append(" | " + Utils.GetItemShortName(kvp.Key));
+
+#if DEBUG
+		    logString.Append("Processing item " +
+		                     (a + 1) +
+		                     "/" +
+		                     Items.Count +
+		                     ": " +
+		                     itemName);
+
+		    logger.Info(logString.ToString());
+		    a += 1;
+#endif
 
 		    // UseBsgStaticFleaBanList
 		    if (Config.UseBsgStaticFleaBanList.Enabled)
@@ -832,21 +838,49 @@ public class ItemInfo(
 		    }
 			    
 		    // BulletStatsInName
-		    if (Config.ModBulletStatsInName.Enabled &&
-		        itemProperties.AmmoType is "bullet" or "buckshot")
+		    if (Config.ModBulletStatsInName.Enabled)
 		    {
 			    double damageMult = 1;
+			    if (itemProperties.AmmoType is "bullet" or "buckshot")
+			    {
+				    if (itemProperties.AmmoType == "buckshot")
+					    damageMult = itemProperties.BuckshotBullets ?? 0;
 
-			    if (itemProperties.AmmoType == "buckshot")
-				    damageMult = itemProperties.BuckshotBullets ?? 0;
-			    
-			    Utils.AddToName(itemId,
-				    " (" +
-				    itemProperties.Damage * damageMult +
-				    "/" +
-				    itemProperties.PenetrationPower +
-				    ")",
-				    "append");
+				    addToName.Clear().Append(" (" +
+				                             itemProperties.Damage * damageMult +
+				                             "/" +
+				                             itemProperties.PenetrationPower +
+				                             ")");
+
+				    Utils.AddToName(itemId,
+					    addToName.ToString(),
+					    "append");
+
+				    Utils._locales[UserLocale][itemId + " Name"] += addToName;
+			    } 
+			    else if (itemProperties.Name != null &&
+			             itemProperties.Name.Contains("ammo_box"))
+			    {
+				    TemplateItem ammo =
+					    Items[itemProperties.StackSlots.First().Properties.Filters.First().Filter.First()];
+				    TemplateItemProperties? ammoProperties = ammo.Properties;
+				    
+				    if (ammoProperties != null &&
+				        ammoProperties.AmmoType == "buckshot")
+					    damageMult = ammoProperties.BuckshotBullets ?? 0;
+
+				    addToName.Clear().Append(" (" +
+				                             ammoProperties.Damage * damageMult +
+				                             "/" +
+				                             ammoProperties.PenetrationPower +
+				                             ")");
+
+				    Utils.AddToName(itemId,
+					    addToName.ToString(),
+					    "append");
+
+				    Utils._locales[UserLocale][itemId + " Name"] += addToName;
+			    }
 		    }
 		    
 		    if (Config.ModArmorInfo.Enabled)
@@ -882,24 +916,33 @@ public class ItemInfo(
 												 "% - " +
 												 Math.Round(armor.MaxRepairDegradation * 100) +
 												 "%\n\n");
-				    
+
+				    addToName.Clear().Append(" (" +
+										   itemProperties.ArmorClass +
+										   "/" +
+										   Math.Round(itemProperties.MaxDurability ?? 0 / armor.Destructibility) +
+										   ")");
+				    addToShortName.Clear().Append(" (" + 
+												itemProperties.ArmorClass + 
+												"/" + 
+												Math.Round(itemProperties.MaxDurability ?? 0/ armor.Destructibility) +
+												")");
+
 				    if (Config.ModArmorInfo.AddArmorToName)
-					    Utils.AddToName(itemId, 
-								" (" + 
-								itemProperties.ArmorClass + 
-								"/" + 
-								Math.Round(itemProperties.MaxDurability ?? 0 / armor.Destructibility) + 
-								")", 
-									"append");
-				    
-				    if (Config.ModArmorInfo.AddArmorToShortName)
-					    Utils.AddToShortName(itemId, 
-						    " (" + 
-								itemProperties.ArmorClass + 
-								"/" + 
-								Math.Round(itemProperties.MaxDurability ?? 0/ armor.Destructibility) +
-								")", 
+				    {
+					    Utils.AddToName(itemId,
+										addToName.ToString(),
 										"append");
+					    Utils._locales[UserLocale][itemId + " Name"] += addToName;
+				    }
+
+				    if (Config.ModArmorInfo.AddArmorToShortName)
+				    {
+					    Utils.AddToShortName(itemId,
+											addToShortName.ToString(),
+											"append");
+					    Utils._locales[UserLocale][itemId + " ShortName"] += addToShortName;
+				    }
 			    }
 		    }
 		    
@@ -1080,10 +1123,17 @@ public class ItemInfo(
 				    if (!string.IsNullOrEmpty(mark))
 				    {
 					    if (Config.ModMarkValuableItems.AddToShortName)
-						    Utils.AddToShortName(itemId, mark, "prepend");
+					    {
+						    Utils.AddToShortName(itemId, mark + " ", "prepend");
+						    Utils._locales[UserLocale][itemId + " ShortName"] = mark + " " +
+																				Utils._locales[UserLocale][itemId + " ShortName"];
+					    }
 
 					    if (Config.ModMarkValuableItems.AddToName)
-						    Utils.AddToName(itemId, mark, "append");
+					    {
+						    Utils.AddToName(itemId, " " + mark, "append");
+						    Utils._locales[UserLocale][itemId + " Name"] += " " + mark;
+					    }
 				    }
 			    }
 		    }
@@ -1343,16 +1393,23 @@ public class ItemInfo(
 
 		    Utils.AddToDescription(itemId, descriptionString.ToString(), "prepend");
 		    
-
 		    bool debug = false;
 
 		    if (!debug) 
 			    continue;
 			    
-		    logger.Info("Item \"" +
+		    /*logger.Info("Item \"" +
 		                itemName +
 		                "\" : " +
-		                descriptionString);
+		                descriptionString);*/
+		    
+		    logString.Append("Processing item " +
+		                     (a + 1) +
+		                     "/" +
+		                     Items.Count +
+		                     ": " +
+		                     itemName);
+		    
 	    }
 	    
 	    JsonSerializerOptions options = new JsonSerializerOptions

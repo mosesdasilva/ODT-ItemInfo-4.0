@@ -223,21 +223,24 @@ public static class Utils
 		    {
 			    case "prepend":
 				    localeData[itemId + " " + type] = addToName + originalName;
+				    _locales[lang][itemId + " " + type] = addToName + originalName;
 				    break;
 			    case "append":
 				    localeData[itemId + " " + type] = originalName + addToName;
+				    _locales[lang][itemId + " " + type] = originalName + addToName;
 				    break;
 			    case "wrap":
 				    localeData[itemId + " " + type] = addToName[..^12] + 
 				                                      localeData[itemId + " " + type] + 
 				                                      addToName[^12..];
+				    _locales[lang][itemId + " " + type] = addToName[..^12] + 
+				                                          localeData[itemId + " " + type] + 
+				                                          addToName[^12..];
 				    break;
 			    default:
 				    localeData[itemId + " " + type] = _locales[lang][itemId + " " + type];
 				    break;
 		    }
-		    
-		    //_locales[lang][itemId + " " + type] = localeData[itemId + " " + type];
 		    
 		    return localeData;
 	    });
@@ -326,12 +329,12 @@ public static class Utils
 	    else
 	    {
 		    AddLocaleTransformer(_lazyloadList,
-			    lang,
-			    "ShortName",
-			    "",
-			    itemId,
-			    "",
-			    "");
+								lang,
+								"ShortName",
+								"",
+								itemId,
+								"",
+								"");
 	    }
     }
     

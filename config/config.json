@@ -54,7 +54,7 @@
 		"",
 		""
 	],
-	"MarkValueableItems": {
+	"MarkValuableItems": {
 		"_description": "Marks most valuable items by adding symbols ★ and ☆ to item names and inventory icons based on item per-slot value (configured below) when sold to traders OR fleamarket AVG price. Defaults: ☆ - good items - item value per slot is more then 10k when sold to vendors, or more then 15k on flea market. ★ best items - item value per slot is more then 20k to vendors, or more then 30k on flea market. Use really high values if you want to disable certain type of highlights, eg flea ones. Option to *always* mark banned items with a ★.",
 		"_example": "",
 		"enabled": true,
