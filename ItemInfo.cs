@@ -799,6 +799,9 @@ public class ItemInfo(
 					    itemRarity = BsgBlacklist.Contains(ammo ?? "")
 						    ? 7
 						    : Utils.BarterInfoGenerator(Utils.BarterResolver(ammo ?? "")).rarityArray.Min();
+
+				    if (itemRarity != 7)
+					    fleaPriceString = "";
 			    }
 		    }
 
