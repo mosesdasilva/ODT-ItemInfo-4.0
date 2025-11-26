@@ -465,7 +465,8 @@ public class ItemInfo(
 						DollarRatio, 
 						UserLocale, 
 						Translation,
-						Quests);
+						Quests,
+						Config);
 
         if (Config.Delay.Enabled)
         {

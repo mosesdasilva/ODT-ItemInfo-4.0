@@ -35,6 +35,7 @@ public static class Utils
 	private static List<HideoutArea> _hideoutAreas = null!;
 	private static HideoutSettingsBase _hideoutSettingsBase = null!;
 	private static List<Trader> _tradersList = null!;
+	private static ModConfig _config = null!;
 
 	public static void Initialize(DatabaseService databaseService, 
 								LocaleService localeService, 
@@ -44,7 +45,8 @@ public static class Utils
 								double dollarRatio,
 								string userLocale,
 								ModTranslation translation,
-								Dictionary<MongoId, Quest> quest)
+								Dictionary<MongoId, Quest> quest,
+								ModConfig config)
 	{
 		_databaseService = databaseService;
 		_localeService = localeService;
@@ -63,6 +65,7 @@ public static class Utils
 		_hideoutProductionData = databaseService.GetHideout().Production;
 		_hideoutAreas = databaseService.GetHideout().Areas;
 		_hideoutSettingsBase = databaseService.GetHideout().Settings;
+		_config = config;
 
 		foreach (string lang in _translation.Language.Keys)
 		{
@@ -469,12 +472,6 @@ public static class Utils
 				Trader trader = kvp.Value;
 				MongoId traderId = kvp.Key;
 
-				/*if (trader.Assort is null) // TODO: Temporary until next SPT update
-				{
-					//_logger.Warning("[ItemInfo] trader.Assort is null.");
-					continue;
-				}*/
-
 				if (trader.Assort.Items.Count == 0)
 				{
 					//_logger.Warning("[ItemInfo] trader.Assort.Items is empty");
@@ -623,7 +620,7 @@ public static class Utils
 			    }
 		    }
 
-		    if (barter.TraderId != "579dc571d53a0658a154fbec") // Exclude Fence from rarity calc
+		    if (_config.BlacklistedTradersFromRarityCalc.Contains(barter.TraderId)) // Exclude Fence from rarity calc
 		    {
 			    if (isBarter)
 				    rarityArray.Add(barter.BarterLoyaltyLevel + 1);

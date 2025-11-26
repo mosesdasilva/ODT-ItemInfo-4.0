@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using SPTarkov.Server.Core.Models.Common;
 
 namespace ItemInfo.Models;
 
@@ -56,7 +57,6 @@ public class ModConfig
 	
 	[JsonPropertyName("RarityRecolorBlacklist")]
 	public List<string> RarityRecolorBlacklist { get; set; }
-	
 	[JsonPropertyName("ArmorInfo")]
 	public ArmorInfo ModArmorInfo { get; set; } = new();
 	public class ArmorInfo
@@ -195,4 +195,7 @@ public class ModConfig
 		[JsonPropertyName("enabled")]
 		public bool Enabled { get; set; }
 	}
+	
+	[JsonPropertyName("BlacklistedTradersFromRarityCalc")]
+	public List<MongoId> BlacklistedTradersFromRarityCalc { get; set; }
 }
