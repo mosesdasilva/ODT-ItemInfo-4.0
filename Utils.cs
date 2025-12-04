@@ -231,22 +231,6 @@ public static class Utils
 				    localeData[itemId + " " + type] = originalName + addToName;
 				    _locales[lang][itemId + " " + type] = originalName + addToName;
 				    break;
-			    case "wrap":
-				    localeData[itemId + " " + type] = addToName[..^12] + 
-				                                      localeData[itemId + " " + type] + 
-				                                      addToName[^12..];
-				    _locales[lang][itemId + " " + type] = addToName[..^12] + 
-				                                          localeData[itemId + " " + type] + 
-				                                          addToName[^12..];
-				    break;
-			    case "wrapShortName":
-				    localeData[itemId + " " + type] = addToName[..^8] + 
-				                                      localeData[itemId + " " + type] + 
-				                                      addToName[^8..];
-				    _locales[lang][itemId + " " + type] = addToName[..^8] + 
-				                                          localeData[itemId + " " + type] + 
-				                                          addToName[^8..];
-				    break;
 			    default:
 				    localeData[itemId + " " + type] = _locales[lang][itemId + " " + type];
 				    break;
@@ -403,10 +387,10 @@ public static class Utils
 		    AddLocaleTransformer(_lazyloadList,
 								lang,
 								"Name",
-								"wrap",
+								"prepend",
 								itemId,
-								"<b><color=" + tiersHexCode + "></color></b>",
-								"");
+								"<b><color=" + tiersHexCode + ">",
+								_locales[lang][itemId + " Name"] + "</color></b>");
 	    }
     }
     
@@ -423,12 +407,12 @@ public static class Utils
 	    else
 	    {
 		    AddLocaleTransformer(_lazyloadList,
-			    lang,
-			    "ShortName",
-			    "wrapShortName",
-			    itemId,
-			    "<color=" + tiersHexCode + "></color>",
-			    "");
+								lang,
+								"ShortName",
+								"prepend",
+								itemId,
+								"<color=" + tiersHexCode + ">",
+								_locales[lang][itemId + " ShortName"] + "</color>");
 	    }
     }
 

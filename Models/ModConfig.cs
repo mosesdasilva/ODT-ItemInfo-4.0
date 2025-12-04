@@ -43,6 +43,8 @@ public class ModConfig
 	{
 		[JsonPropertyName("enabled")]
 		public bool Enabled { get; set; }
+		[JsonPropertyName("addColorToName")]
+		public bool AddColorToName { get; set; }
 		[JsonPropertyName("addTierNameToPricesInfo")]
 		public bool AddTierNameToPricesInfo { get; set; }
 		[JsonPropertyName("fallbackValueBasedRecolor")]
