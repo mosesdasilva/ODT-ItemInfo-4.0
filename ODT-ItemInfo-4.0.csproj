@@ -17,24 +17,86 @@
         <PackageReference Include="SPTarkov.DI" Version="4.0.3" />
         <PackageReference Include="SPTarkov.Server.Core" Version="4.0.3" />
     </ItemGroup>
-    
-    <ItemGroup>
-        <None Include="ODT-ItemInfo-4.0.csproj.user" />
-    </ItemGroup>
 
     <PropertyGroup>
         <SPTPath>F:\SPT_4.0\SPT</SPTPath>
-        <ModsDirectoryPath>$(SPTPath)\user\mods\$(MSBuildProjectName)</ModsDirectoryPath>
     </PropertyGroup>
 
-    <Target Name="CopyToSPT" AfterTargets="AfterBuild" Condition="'$(SPTPath)' != ''">
-        <Message Importance="high" Text="Copying mods to $(ModsDirectoryPath)" />
+    <Target Name="ForceBuild" BeforeTargets="CoreCompile" Inputs="" Outputs="" />
+
+    <Target Name="DebugCopy" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+
+        <!-- Destination for debug builds -->
+        <PropertyGroup>
+            <DebugStaging>$(SPTPath)\user\mods\$(ProjectName)</DebugStaging>
+        </PropertyGroup>
+
+        <MakeDir Directories="$(DebugStaging)" />
+
         <ItemGroup>
-            <FilesToCopy Include="$(OutputPath)$(TargetName)$(TargetExt)" />
-            <FilesToCopy Include="$(OutputPath)$(TargetName).pdb" />
+            <!-- Copy all DLLs produced by the build -->
+            <DebugDlls Include="$(OutputPath)*.dll" />
+
+            <!-- Copy all config files from the config folder -->
+            <ConfigFolder Include="$(OutputPath)config\**\*.*" />
         </ItemGroup>
-        <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(ModsDirectoryPath)" ContinueOnError="false" />
-        <Message Text="Files copied" />
+
+        <Message Importance="high" Text="Debug build detected. Copying files to $(DebugStaging)" />
+
+        <!-- Copy DLLs -->
+        <Copy
+                SourceFiles="@(DebugDlls)"
+                DestinationFolder="$(DebugStaging)"
+                SkipUnchangedFiles="false"
+                ContinueOnError="false" />
+
+        <!-- Copy config folder, preserving directory structure -->
+        <Copy
+                SourceFiles="@(ConfigFolder)"
+                DestinationFiles="@(ConfigFolder->'$(DebugStaging)\config\%(RecursiveDir)%(Filename)%(Extension)')"
+                SkipUnchangedFiles="true"
+                ContinueOnError="false" />
+
+    </Target>
+
+    <!-- Copy output to staging directory -->
+    <Target Name="StagingForge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+
+        <!-- Build the full staging path -->
+        <PropertyGroup>
+            <StagingDir>D:\Staging Area\$(ProjectName)\SPT\user\mods\$(ProjectName)</StagingDir>
+        </PropertyGroup>
+
+        <!-- Create directory if missing -->
+        <MakeDir Directories="$(StagingDir)" Condition="!Exists('$(StagingDir)')" />
+
+        <!-- Collect DLLs -->
+        <ItemGroup>
+            <!-- Copy all DLLs produced by the build -->
+            <DllFiles Include="$(OutputPath)*.dll" />
+
+            <!-- Copy all config files from the config folder -->
+            <ConfigFolder Include="$(OutputPath)config\**\*.*" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Copying DLLs to staging: $(StagingDir)" />
+
+        <!-- Copy DLLs -->
+        <Copy
+                SourceFiles="@(DllFiles)"
+                DestinationFolder="$(StagingDir)"
+                SkipUnchangedFiles="true"
+                ContinueOnError="false" />
+
+        <!-- Copy config folder, preserving directory structure -->
+        <Copy
+                SourceFiles="@(ConfigFolder)"
+                DestinationFiles="@(ConfigFolder->'$(StagingDir)\config\%(RecursiveDir)%(Filename)%(Extension)')"
+                SkipUnchangedFiles="true"
+                ContinueOnError="false" />
+
+        <Message Importance="high" Text="Staging complete." />
+
     </Target>
     
 </Project>

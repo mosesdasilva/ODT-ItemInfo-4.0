@@ -738,18 +738,6 @@ public class ItemInfo(
 		    itemName.Append(Utils.GetItemName(kvp.Key));
 		    itemName.Append(" | " + Utils.GetItemShortName(kvp.Key));
 
-#if DEBUG
-		    logString.Append("Processing item " +
-		                     (a + 1) +
-		                     "/" +
-		                     Items.Count +
-		                     ": " +
-		                     itemName);
-
-		    logger.Info(logString.ToString());
-		    a += 1;
-#endif
-
 		    // UseBsgStaticFleaBanList
 		    if (Config.UseBsgStaticFleaBanList.Enabled)
 			    isBanned = true;
@@ -1397,29 +1385,24 @@ public class ItemInfo(
 
 		    Utils.AddToDescription(itemId, descriptionString.ToString(), "prepend");
 		    
-		    bool debug = false;
-
-		    if (!debug) 
-			    continue;
-			    
-		    /*logger.Info("Item \"" +
-		                itemName +
-		                "\" : " +
-		                descriptionString);*/
-		    
+#if DEBUG
 		    logString.Append("Processing item " +
 		                     (a + 1) +
 		                     "/" +
 		                     Items.Count +
 		                     ": " +
-		                     itemName);
-		    
+		                     Utils._locales[UserLocale][itemId + " Name"]);
+
+		    logger.Info(logString.ToString());
+		    a += 1;
+#endif
 	    }
 	    
 	    JsonSerializerOptions options = new JsonSerializerOptions
 	    {
 		    WriteIndented = true
 	    };
+	    
 	    string jsonString = JsonSerializer.Serialize(EasyAmmoName, options);
 	    
 	    File.WriteAllText(PathToMod + "/config/easyammoname.json", jsonString);
