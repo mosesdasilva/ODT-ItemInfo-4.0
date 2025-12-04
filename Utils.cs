@@ -401,12 +401,12 @@ public static class Utils
 	    else
 	    {
 		    AddLocaleTransformer(_lazyloadList,
-			    lang,
-			    "Name",
-			    "wrap",
-			    itemId,
-			    "<b><color=" + tiersHexCode + "></color></b>",
-			    "");
+								lang,
+								"Name",
+								"wrap",
+								itemId,
+								"<b><color=" + tiersHexCode + "></color></b>",
+								"");
 	    }
     }
     

@@ -806,8 +806,8 @@ public class ItemInfo(
 				                             ")");
 
 				    Utils.AddToName(itemId,
-					    addToName.ToString(),
-					    "append");
+									addToName.ToString(),
+									"append");
 
 				    Utils._locales[UserLocale][itemId + " Name"] += addToName;
 			    }
