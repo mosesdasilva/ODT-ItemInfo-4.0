@@ -1358,9 +1358,9 @@ public class ItemInfo(
 				    }
 				    
 				    if (Config.ModRarityRecolor.AddColorToName)
-						Utils.AddColorToName(itemId, tiersHexcode.ToString());
+						Utils.AddColorToName(itemId, tiersHexcode.ToString(), UserLocale);
 				    
-				    Utils.AddColorToShortName(itemId, TiersHex["COMMON"]);
+				    Utils.AddColorToShortName(itemId, TiersHex["COMMON"], UserLocale);
 
 				    if (Config.ModRarityRecolor.AddTierNameToPricesInfo &&
 				        !string.IsNullOrEmpty(tier))
