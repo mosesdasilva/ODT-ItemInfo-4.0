@@ -676,7 +676,7 @@ public static class Utils
 											_translation.Language[_userLocale]["lv"] + 
 											barterLoyaltyLevel + 
 											" > " + 
-											GetItemName(itemId, locale));
+											GetItemName(barterForItem, locale));
 	
 					double totalBarterPrice = 0;
 					
