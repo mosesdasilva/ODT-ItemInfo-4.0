@@ -76,14 +76,14 @@ public static class Utils
 			_lazyloadList[lang] = _databaseService.GetLocales().Global[lang];
 		}
 		
-		_tradersList = [_traders["54cb57776803fa99248b456e"],
-						_traders["5ac3b934156ae10c4430e83c"],
-						_traders["5c0647fdd443bc2504c2d371"],
-						_traders["5a7c2eca46aef81a7ca2145d"],
-						_traders["54cb50c76803fa8b248b4571"],
-						_traders["58330581ace78e27b8b10cee"],
-						_traders["5935c25fb3acc3127c3d8cd9"]
-						];
+		_tradersList = [_traders[Traders.THERAPIST],
+						_traders[Traders.RAGMAN],
+						_traders[Traders.JAEGER],
+						_traders[Traders.MECHANIC],
+						_traders[Traders.PRAPOR],
+						_traders[Traders.SKIER],
+						_traders[Traders.PEACEKEEPER]
+		];
 	}
     public static string GetItemName(string itemId, string locale = "en")
     {
