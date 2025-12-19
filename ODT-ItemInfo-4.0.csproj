@@ -36,6 +36,9 @@
         <ItemGroup>
             <!-- Copy all DLLs produced by the build -->
             <DebugDlls Include="$(OutputPath)*.dll" />
+            
+            <!-- Copy all PDBs produced by the build -->
+            <DebugPdb Include="$(OutputPath)*.pdb" />
 
             <!-- Copy all config files from the config folder -->
             <ConfigFolder Include="$(OutputPath)config\**\*.*" />
@@ -46,6 +49,12 @@
         <!-- Copy DLLs -->
         <Copy
                 SourceFiles="@(DebugDlls)"
+                DestinationFolder="$(DebugStaging)"
+                SkipUnchangedFiles="false"
+                ContinueOnError="false" />
+
+        <Copy
+                SourceFiles="@(DebugPdb)"
                 DestinationFolder="$(DebugStaging)"
                 SkipUnchangedFiles="false"
                 ContinueOnError="false" />
