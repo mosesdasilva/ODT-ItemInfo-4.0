@@ -882,8 +882,8 @@ public static class Utils
 				
 			if (recipe.Locked is null ||
 			    requirements is null ||
-			    (bool)recipe.Locked &&
-			    requirements.All(x => x.QuestId is not null))
+			    ((bool)recipe.Locked &&
+			     requirements.All(x => x.QuestId is not null)))
 				continue;
 			
 			double totalRecipePrice = 0;
@@ -898,19 +898,29 @@ public static class Utils
 				MongoId? craftComponentId = requirement.TemplateId;
 				double? craftComponentPrice = GetFleaPrice(craftComponentId!);
 				
-				if (craftComponentId is null ||
-				    craftComponentPrice is null ||
-				    requirement.Count is null)
-					continue;
-					
 				switch (requirement.Type)
 				{
 					case "Area":
-						recipeAreaString.Clear().Append(GetCraftingAreaName((int)recipe.AreaType!, locale));
+						recipeAreaString.Clear().Append(GetCraftingAreaName((int)recipe.AreaType!, locale) +
+						                                " " +
+						                                _translation.Language[locale]["lv"] +
+						                                requirement.RequiredLevel);
 						break;
 					
 					case "Item":
 						int? craftComponentCount = requirement.Count;
+
+						if (craftComponentId is null)
+						{
+							_logger.Error("[ItemInfo] craftComponentId is null.");
+							break;
+						}
+
+						if (craftComponentCount is null)
+						{
+							_logger.Error("[ItemInfo] craftComponentCount is null.");
+							break;
+						}
 
 						componentString.Append(GetItemShortName(craftComponentId, locale) +
 											   " x" +
@@ -922,6 +932,13 @@ public static class Utils
 					case "Resource":
 						double? resourceProportion = requirement.Resource /
 						                             _items[(MongoId)requirement.TemplateId!].Properties?.Resource;
+						
+						if (craftComponentId is null)
+						{
+							_logger.Error("[ItemInfo] craftComponentId is null.");
+							break;
+						}
+						
 						componentString.Append(GetItemShortName(craftComponentId, locale) +
 											   " x" +
 											   Math.Round((double)resourceProportion! * 100) +
@@ -1044,11 +1061,10 @@ public static class Utils
 			if (requirements is null)
 				continue;
 
-			foreach (Requirement requirement in requirements)
+			foreach (Requirement t in requirements)
 			{
-				if (requirement.TemplateId is null ||
-				    requirement.TemplateId != itemId ||
-				    requirement.Count is null) 
+				if (t.TemplateId is null ||
+				    t.TemplateId != itemId)
 					continue;
 				
 				string usedForCraftingComponentString = " < … + ";
@@ -1056,64 +1072,90 @@ public static class Utils
 				double totalRecipePrice = 0;
 				string questReq = "";
 
-				switch (requirement.Type)
+				foreach (Requirement requirement in requirements)
 				{
-					case "Area":
-						recipeAreaString = GetCraftingAreaName((int)requirement.AreaType!, locale) +
-						                   _translation.Language[locale]["lv"] +
-						                   requirement.RequiredLevel;
-						break;
-						
-					case "Item":
-						if (requirement.TemplateId != itemId)
-							usedForCraftingComponentString += GetItemShortName(requirement.TemplateId, locale) +
-							                                  " x" +
-							                                  requirement.Count +
-							                                  " + ";
-						totalRecipePrice += (double)(GetFleaPrice(requirement.TemplateId) * requirement.Count)!;
-						break;
-						
-					case "Resource":
-						double resourceProportion =
-							(double)(requirement.Resource / _items[(MongoId)requirement.TemplateId].Properties?.Resource)!;
+					switch (requirement.Type)
+					{
+						case "Area":
+							recipeAreaString = GetCraftingAreaName((int)requirement.AreaType!, locale) +
+							                   _translation.Language[locale]["lv"] +
+							                   requirement.RequiredLevel;
+							break;
 
-						if (requirement.TemplateId != itemId)
-							usedForCraftingComponentString += GetItemShortName(requirement.TemplateId, locale) +
-							                                  " x" +
-							                                  Math.Round(resourceProportion * 100) +
-							                                  "% + ";
-						totalRecipePrice +=
-							Math.Round((double)(GetFleaPrice(requirement.TemplateId) * resourceProportion)!);
-						break;
-						
-					case "QuestComplete":
-						questReq += " " +
-						            _locales[locale][requirement.QuestId + " name"] +
-						            "✔) ";
-						break;
+						case "Item":
+							if (requirement.TemplateId is null)
+							{
+								_logger.Warning("[ItemInfo] requirement.TemplateId is null.");
+								break;
+							}
+
+							if (requirement.Count is null)
+							{
+								_logger.Warning("[ItemInfo] requirement.Count is null.");
+								break;
+							}
+							
+							if (requirement.TemplateId != itemId)
+								usedForCraftingComponentString += GetItemShortName(requirement.TemplateId, locale) +
+								                                  " x" +
+								                                  requirement.Count +
+								                                  " + ";
+
+							totalRecipePrice += (double)(GetFleaPrice(requirement.TemplateId) * requirement.Count)!;
+							break;
+
+						case "Resource":
+							if (requirement.TemplateId is null)
+							{
+								_logger.Warning("[ItemInfo] requirement.TemplateId is null.");
+								break;
+							}
+							
+							double resourceProportion =
+								(double)(requirement.Resource /
+								         _items[(MongoId)requirement.TemplateId].Properties?.Resource)!;
+
+							if (requirement.TemplateId != itemId)
+								usedForCraftingComponentString += GetItemShortName(requirement.TemplateId, locale) +
+								                                  " x" +
+								                                  Math.Round(resourceProportion * 100) +
+								                                  "% + ";
+							totalRecipePrice +=
+								Math.Round((double)(GetFleaPrice(requirement.TemplateId) * resourceProportion)!);
+							break;
+
+						case "QuestComplete":
+							if (string.IsNullOrEmpty(requirement.QuestId))
+								break;
+							
+							questReq += " (" +
+							            _locales[locale][requirement.QuestId + " name"] +
+							            "✔) ";
+							break;
+					}
 				}
-					
-				usedForCraftingComponentString = usedForCraftingComponentString.Substring(0 , usedForCraftingComponentString.Length - 3);
+				
+				usedForCraftingComponentString =
+					usedForCraftingComponentString[..^3];
 				usedForCraftingComponentString += "  | Δ ≈ " +
 				                                  FormatPrice(Math.Round(
 					                                  (double)(GetFleaPrice(recipe.EndProduct) * recipe.Count -
 					                                           totalRecipePrice)!)) +
 				                                  "₽";
-				usedForCraftingString.Append((requirement.Type == "Tool"
-												 ? _translation.Language[locale]["Tool"] : 
-												 _translation.Language[locale]["Part"] + 
-												 " x" + 
-												 requirement.Count) +
-											 " > " +
-											 GetItemName(recipe.EndProduct, locale) +
-											 " x" +
-											 recipe.Count);
-
-				usedForCraftingString.Append(" @ " +
-											 recipeAreaString +
-											 questReq +
-											 usedForCraftingComponentString +
-											 "\n");
+				usedForCraftingString.Append((t.Type == "Tool"
+					                             ? _translation.Language[locale]["Tool"]
+					                             : _translation.Language[locale]["Part"] +
+					                               " x" +
+					                               t.Count) +
+				                             " > " +
+				                             GetItemName(recipe.EndProduct, locale) +
+				                             " x" +
+				                             recipe.Count +
+				                             " @ " +
+				                             recipeAreaString +
+				                             questReq +
+				                             usedForCraftingComponentString +
+				                             "\n");
 			}
 		}
 		
