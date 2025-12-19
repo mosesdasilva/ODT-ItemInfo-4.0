@@ -69,10 +69,8 @@ public static class Utils
 
 		foreach (string lang in _translation.Language.Keys)
 		{
-			if (!_serverSupportedLocale.Contains(lang)) 
-				continue;
-			
 			_locales[lang] = _localeService.GetLocaleDb(lang);
+			
 			_lazyloadList[lang] = _databaseService.GetLocales().Global[lang];
 		}
 		
