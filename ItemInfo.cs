@@ -735,8 +735,8 @@ public class ItemInfo(
 		    Utils.RefreshName(itemId, UserLocale);
 		    Utils.RefreshShortName(itemId, UserLocale);
 		    
-		    itemName.Append(Utils.GetItemName(kvp.Key));
-		    itemName.Append(" | " + Utils.GetItemShortName(kvp.Key));
+		    itemName.Append(Utils.GetItemName(kvp.Key, UserLocale));
+		    itemName.Append(" | " + Utils.GetItemShortName(kvp.Key, UserLocale));
 
 		    // UseBsgStaticFleaBanList
 		    if (Config.UseBsgStaticFleaBanList.Enabled)

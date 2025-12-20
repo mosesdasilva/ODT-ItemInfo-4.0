@@ -70,7 +70,6 @@ public static class Utils
 		foreach (string lang in _translation.Language.Keys)
 		{
 			_locales[lang] = _localeService.GetLocaleDb(lang);
-			
 			_lazyloadList[lang] = _databaseService.GetLocales().Global[lang];
 		}
 		
@@ -244,8 +243,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-				    AddToName(itemId, addToName, place, locale);
+			    AddToName(itemId, addToName, place, locale);
 		    }
 	    }
 	    else
@@ -290,8 +288,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-					AddToShortName(itemId, addToShortName, place, locale);
+			    AddToShortName(itemId, addToShortName, place, locale);
 		    }
 	    }
 	    else
@@ -314,8 +311,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-				    RefreshShortName(itemId, locale);
+			    RefreshShortName(itemId, locale);
 		    }
 	    }
 	    else
@@ -336,8 +332,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-				    AddToDescription(itemId, addToDescription, place, locale);
+			    AddToDescription(itemId, addToDescription, place, locale);
 		    }
 	    }
 	    else
@@ -360,8 +355,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-				    AddToName(itemId, replaceDescription, locale);
+			    AddToName(itemId, replaceDescription, locale);
 		    }
 	    }
 	    else
@@ -376,8 +370,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-					AddColorToName(itemId, tiersHexCode, locale);
+			    AddColorToName(itemId, tiersHexCode, locale);
 		    }
 	    }
 	    else
@@ -398,8 +391,7 @@ public static class Utils
 	    {
 		    foreach (string locale in _lazyloadList.Keys)
 		    {
-			    if (_locales.ContainsKey(locale))
-				    AddColorToShortName(itemId, tiersHexCode, locale);
+			    AddColorToShortName(itemId, tiersHexCode, locale);
 		    }
 	    }
 	    else
