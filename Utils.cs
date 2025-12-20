@@ -242,7 +242,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 				    AddToName(itemId, addToName, place, locale);
@@ -250,7 +250,7 @@ public static class Utils
 	    }
 	    else
 	    {
-		    var originalName = GetItemName(itemId, lang);
+		    string originalName = GetItemName(itemId, lang);
 		    
 		    AddLocaleTransformer(_lazyloadList,
 								lang,
@@ -266,7 +266,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 				    RefreshName(itemId, locale);
@@ -288,7 +288,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 					AddToShortName(itemId, addToShortName, place, locale);
@@ -296,7 +296,7 @@ public static class Utils
 	    }
 	    else
 	    {
-		    var originalShortName = GetItemShortName(itemId, lang);
+		    string originalShortName = GetItemShortName(itemId, lang);
 
 		    AddLocaleTransformer(_lazyloadList,
 								lang,
@@ -312,7 +312,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 				    RefreshShortName(itemId, locale);
@@ -334,7 +334,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 				    AddToDescription(itemId, addToDescription, place, locale);
@@ -342,7 +342,7 @@ public static class Utils
 	    }
 	    else
 	    {
-		    var originalDescription = GetItemDescription(itemId, lang);
+		    string originalDescription = GetItemDescription(itemId, lang);
 
 		    AddLocaleTransformer(_lazyloadList,
 								lang,
@@ -358,7 +358,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 				    AddToName(itemId, replaceDescription, locale);
@@ -374,7 +374,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 					AddColorToName(itemId, tiersHexCode, locale);
@@ -396,7 +396,7 @@ public static class Utils
     {
 	    if (lang == "")
 	    {
-		    foreach (var locale in _serverSupportedLocale)
+		    foreach (string locale in _lazyloadList.Keys)
 		    {
 			    if (_locales.ContainsKey(locale))
 				    AddColorToShortName(itemId, tiersHexCode, locale);
@@ -1078,6 +1078,7 @@ public static class Utils
 					{
 						case "Area":
 							recipeAreaString = GetCraftingAreaName((int)requirement.AreaType!, locale) +
+							                   " " +
 							                   _translation.Language[locale]["lv"] +
 							                   requirement.RequiredLevel;
 							break;
