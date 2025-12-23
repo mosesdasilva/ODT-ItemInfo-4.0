@@ -652,43 +652,19 @@ public class ItemInfo(
     private void ItemHandling()
     {
 	    int a = 0;
-	    StringBuilder descriptionString = new StringBuilder();
-	    StringBuilder priceString = new StringBuilder();
-	    StringBuilder barterString = new StringBuilder();
-	    StringBuilder productionString = new StringBuilder();
-	    StringBuilder usedForBarterString = new StringBuilder();
-	    StringBuilder usedForQuestsString = new StringBuilder();
-	    StringBuilder usedForHideoutString = new StringBuilder();
-	    StringBuilder usedForCraftingString = new StringBuilder();
-	    StringBuilder armorDurabilityString = new StringBuilder();
-	    StringBuilder slotEfficiencyString = new StringBuilder();
-	    StringBuilder headsetDescription = new StringBuilder();
-	    StringBuilder advancedAmmoInfoString = new StringBuilder();
+	    StringBuilder descriptionString = new StringBuilder(); ;
 	    StringBuilder itemBestTraderName = new StringBuilder();
-	    StringBuilder barterResourceInfo = new StringBuilder();
 	    StringBuilder itemName = new StringBuilder();
 	    StringBuilder logString = new StringBuilder();
-	    StringBuilder tiersHexcode = new StringBuilder();
+	    StringBuilder tiersHexCode = new StringBuilder();
 	    StringBuilder addToName = new StringBuilder();
 	    StringBuilder addToShortName = new StringBuilder();
 	    
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
 		    // Clearing all vars
-		    priceString.Clear();
-		    barterString.Clear();
-		    productionString.Clear();
-		    usedForBarterString.Clear();
-		    usedForQuestsString.Clear();
-		    usedForHideoutString.Clear();
-		    usedForCraftingString.Clear();
-		    armorDurabilityString.Clear();
-		    slotEfficiencyString.Clear();
-		    headsetDescription.Clear();
-		    advancedAmmoInfoString.Clear();
 		    itemBestTraderName.Clear();
-		    barterResourceInfo.Clear();
-		    tiersHexcode.Clear();
+		    tiersHexCode.Clear();
 		    itemName.Clear();
 		    logString.Clear();
 		    addToName.Clear();
@@ -731,7 +707,6 @@ public class ItemInfo(
 		    string itemQuestInfo = Utils.QuestInfoGenerator(itemId, UserLocale);
 
 		    itemBestTraderName.Append(itemBestVendor.Item2);
-		    barterResourceInfo.Append(Utils.BarterResourceInfoGenerator(itemId, UserLocale));
 		    
 		    Utils.RefreshName(itemId, UserLocale);
 		    Utils.RefreshShortName(itemId, UserLocale);
@@ -837,7 +812,6 @@ public class ItemInfo(
 								Description = "",
 						    };
 					    }
-
 				    }
 			    }
 		    }
@@ -914,33 +888,6 @@ public class ItemInfo(
 				                                                    "% - " +
 				                                                    Math.Round(armor.MaxRepairDegradation * 100) +
 				                                                    "%\n\n";
-
-				    /*
-				    armorDurabilityString.Append((Config.ModArmorInfo.AddArmorClassInfo
-													 ? i18n["Armorclass"] +
-													   ": " +
-													   itemProperties.ArmorClass +
-													   " | "
-													 : "") +
-												 i18n["Effectivedurability"] +
-												 ": " +
-												 Math.Round((itemProperties.MaxDurability ?? 0)/ armor.Destructibility) +
-												 " (" +
-												 i18n["Max"] +
-												 ": " +
-												 Math.Round(itemProperties.MaxDurability ?? 0) +
-												 " x " +
-												 Localization["Mat" + armorMaterial] +
-												 ": " +
-												 Math.Round(1 / armor.Destructibility, 1) +
-												 ") | " +
-												 i18n["Repairdegradation"] +
-												 ": " +
-												 Math.Round(armor.MinRepairDegradation * 100) +
-												 "% - " +
-												 Math.Round(armor.MaxRepairDegradation * 100) +
-												 "%\n\n");
-					*/
 
 				    addToName.Clear().Append(" (" +
 										   itemProperties.ArmorClass +
@@ -1060,102 +1007,8 @@ public class ItemInfo(
 				                                                     ammoProps.BulletDiameterMilimeters +
 				                                                     "\nWeight: " +
 				                                                     ammoProps.Weight +
+				              
 				                                                     "\n\n";
-					    
-				    /*
-				    advancedAmmoInfoString.Append("Damage: " +
-												 ammoProps.Damage +
-												 "\nPenetration Power: " +
-												 ammoProps.PenetrationPower +
-												 "\nArmor Damage: " +
-												 ammoProps.ArmorDamage +
-												 (ammoProps.ProjectileCount > 1
-													 ? "\nProjectile Count: " +
-													   ammoProps.ProjectileCount
-													 : "") +
-												 (ammoProps.BuckshotBullets > 0
-													 ? "\nBuckshot Bullets: " +
-													   ammoProps.BuckshotBullets
-													 : "") +
-												 "\nInitial Speed: " +
-												 ammoProps.InitialSpeed +
-												 "\nSpeed Retardation: " +
-												 ammoProps.SpeedRetardation +
-												 "\nBallistic Coeficient: " +
-												 ammoProps.BallisticCoeficient +
-												 "\nAmmo Tooltip Class: " +
-												 ammoProps.AmmoTooltipClass +
-												 "\nFragmentation Chance: " +
-												 (Math.Round((ammoProps.FragmentationChance ?? 0) * 100) + "%" +
-												  (ammoProps.MaxFragmentsCount > 1
-													  ? "\nMin Fragments Count: " +
-														ammoProps.MinFragmentsCount +
-														"\nMax Fragments Count: " +
-														ammoProps.MaxFragmentsCount
-													  : "")) +
-												  "\nRicochet Chance: " +
-												  Math.Round((ammoProps.RicochetChance ?? 0) * 100) +
-												  "%" +
-												  "\nMisfire Chance: " +
-												  Math.Round((ammoProps.MisfireChance ?? 0) * 100) +
-												  "%" +
-												  "\nMalf Feed Chance: " +
-												  Math.Round((ammoProps.MalfFeedChance ?? 0) * 100) +
-												  "%" +
-												  "\nMalf Misfire Chance: " +
-												  Math.Round((ammoProps.MalfMisfireChance ?? 0) * 100) +
-												  "%" +
-												  "\nDurability Burn Modificator: " +
-												  ammoProps.DurabilityBurnModificator +
-												  "\nHeat Factor: " +
-												  ammoProps.HeatFactor +
-												  "\nHeavy blleding Delta: " +
-												  ammoProps.HeavyBleedingDelta +
-												  "\nLight Bleeding Delta: " +
-												  ammoProps.LightBleedingDelta +
-												  "\nStamina Burn Per Damage: " +
-												  ammoProps.StaminaBurnPerDamage +
-												  (ammoProps.Tracer ?? false
-													  ? "\nTracer: Yes" +
-														"\nTracer Color: " +
-														ammoProps.TracerColor +
-														"\nTracer Distance: " +
-														ammoProps.TracerDistance
-													  : "Tracer: No") +
-												  "\nPenetration Chance Obstacle: " +
-												  ammoProps.PenetrationChanceObstacle +
-												  "\nPenetration Damage Mod: " +
-												  ammoProps.PenetrationDamageMod +
-												  "\nPenetration Power Diviation: " +
-												  ammoProps.PenetrationPowerDiviation +
-												  "\nAccr(?): " +
-												  ammoProps.AmmoAccr +
-												  "\nDist(?): " +
-												  ammoProps.AmmoDist +
-												  "\nHear(?): " +
-												  ammoProps.AmmoHear +
-												  "\nRec(?): " +
-												  ammoProps.AmmoRec +
-												  "\nShift Chance(?): " +
-												  ammoProps.AmmoShiftChance +
-												  (ammoProps.ExplosionStrength > 0
-													  ? "\nExplosion Strength: " +
-														ammoProps.ExplosionStrength +
-														"\nMax Explosion Distance: " +
-														ammoProps.MaxExplosionDistance +
-														"\nExplosion Type: " +
-														ammoProps.ExplosionType +
-														"\nHasGrenadeComponent: " +
-														ammoProps.HasGrenaderComponent
-													  : "") +
-												  "\nBullet Mass Gram: " +
-												  ammoProps.BulletMassGram +
-												  "\nBullet Diameter Millimeters: " +
-												  ammoProps.BulletDiameterMilimeters +
-												  "\nWeight: " +
-												  ammoProps.Weight +
-												  "\n\n");
-					*/
 			    }
 		    }
 
@@ -1185,17 +1038,6 @@ public class ItemInfo(
 					                                                   "/" +
 					                                                   itemProperties.Width * itemProperties.Height +
 					                                                   ")\n\n";
-					    
-					    /*
-					    slotEfficiencyString.Append(i18n["Slotefficiency"] +
-													": x" +
-													slotEfficiency +
-													" (" +
-													totalSlots +
-													"/" +
-													itemProperties.Width * itemProperties.Height +
-													")\n\n");
-						*/
 				    }
 			    }
 		    }
@@ -1276,28 +1118,6 @@ public class ItemInfo(
 			                                          ": " +
 			                                          Utils.FormatPrice(traderPrice) +
 			                                          "₽";
-				/*
-			    priceString.Append((Config.ModPriceInfo.AddFleaPrice
-										? i18n["Fleaprice"] +
-										  ": " +
-										  (fleaPriceString == i18n["BANNED"]
-											  ? "BANNED"
-											  : Utils.FormatPrice(fleaPrice) + (fleaPrice > 0 ? "₽" : "")) +
-										  " | "
-										: "") +
-									(Config.ModPriceInfo.AddItemValue
-										? i18n["ItemValue"] +
-										  ": " +
-										  Utils.FormatPrice(itemInHandbook.Price ?? 0) +
-										  " | "
-										: "") +
-									i18n["Valuation1"] +
-									itemBestTraderName +
-									i18n["Valuation2"] +
-									": " +
-									Utils.FormatPrice(traderPrice) +
-									"₽");
-			*/
 
 		    if (Config.ModHeadsetInfo.Enabled)
 		    {
@@ -1333,29 +1153,6 @@ public class ItemInfo(
 					                                                   "%"
 					                                                 : "") +
 				                                                 "\n\n";
-
-				    /*
-				    headsetDescription.Append("<color=#f59542>" +
-				                              i18n["AmbientVolume"] +
-				                              ": " +
-				                              Math.Round(((itemProperties.AmbientCompressorSendLevel ?? -10) + 10 +
-				                                          (itemProperties.EffectsReturnsGrEnvCommonCompressorSendLeveloupVolume ?? -7) + 7 +
-				                                          (itemProperties.EnvNatureCompressorSendLevel ?? -5) + 5 +
-				                                          (itemProperties.EnvTechnicalCompressorSendLevel ?? -7) + 7) * 10) / 10 +
-				                              "db</color> | " +
-				                              i18n["Boost"] +
-				                              ": +" +
-				                              gain + Math.Abs((thresh ?? -20) + 20) +
-				                              "db" +
-				                              (itemProperties.Distortion > 0
-					                              ? " | " +
-					                                i18n["Distortion"] +
-					                                ": " +
-					                                Math.Round((itemProperties.Distortion ?? 0) * 100) +
-					                                "%"
-					                              : "") +
-				                              "\n\n");
-				    */
 			    }
 		    }
 
@@ -1363,7 +1160,6 @@ public class ItemInfo(
 		    {
 			    if (barterInfo.Item2.Length > 1)
 				    ItemDescription[itemId].BarterString = barterInfo.Item2 + "\n";
-			    //barterString.Clear().Append(barterInfo.Item2 + "\n");
 		    }
 		    
 		    if (Config.ModQuestInfo.Enabled)
@@ -1371,7 +1167,6 @@ public class ItemInfo(
 			    if (itemQuestInfo.Length > 1)
 			    {
 				    ItemDescription[itemId].UsedForQuestsString = itemQuestInfo + "\n";
-				    //usedForQuestsString.Clear().Append(itemQuestInfo + "\n");
 
 				    if (Config.ModQuestInfo.FirInName &&
 				        itemQuestInfo.Contains("✔"))
@@ -1402,47 +1197,47 @@ public class ItemInfo(
 					    case 7:
 						    tier = i18n["OVERPOWERED"];
 						    itemProperties.BackgroundColor = TiersHex["OVERPOWERED"];
-						    tiersHexcode.Clear().Append(TiersHex["OVERPOWERED"]);
+						    tiersHexCode.Clear().Append(TiersHex["OVERPOWERED"]);
 						    break;
 					    case 1:
 						    tier = i18n["COMMON"];
 						    itemProperties.BackgroundColor = TiersHex["COMMON"];
-						    tiersHexcode.Clear().Append(TiersHex["COMMON"]);
+						    tiersHexCode.Clear().Append(TiersHex["COMMON"]);
 						    break;
 					    case 2:
 						    tier = i18n["RARE"];
 						    itemProperties.BackgroundColor = TiersHex["RARE"];
-						    tiersHexcode.Clear().Append(TiersHex["RARE"]);
+						    tiersHexCode.Clear().Append(TiersHex["RARE"]);
 						    break;
 					    case 3:
 						    tier = i18n["EPIC"];
 						    itemProperties.BackgroundColor = TiersHex["EPIC"];
-						    tiersHexcode.Clear().Append(TiersHex["EPIC"]);
+						    tiersHexCode.Clear().Append(TiersHex["EPIC"]);
 						    break;
 					    case 4:
 						    tier = i18n["LEGENDARY"];
 						    itemProperties.BackgroundColor = TiersHex["LEGENDARY"];
-						    tiersHexcode.Clear().Append(TiersHex["LEGENDARY"]);
+						    tiersHexCode.Clear().Append(TiersHex["LEGENDARY"]);
 						    break;
 					    case 5:
 						    tier = i18n["UBER"];
 						    itemProperties.BackgroundColor = TiersHex["UBER"];
-						    tiersHexcode.Clear().Append(TiersHex["UBER"]);
+						    tiersHexCode.Clear().Append(TiersHex["UBER"]);
 						    break;
 					    case 6:
 						    tier = i18n["UNOBTAINIUM"];
 						    itemProperties.BackgroundColor = TiersHex["UNOBTAINIUM"];
-						    tiersHexcode.Clear().Append(TiersHex["UNOBTAINIUM"]);
+						    tiersHexCode.Clear().Append(TiersHex["UNOBTAINIUM"]);
 						    break;
 					    case 8:
 						    tier = i18n["CUSTOM"];
 						    itemProperties.BackgroundColor = TiersHex["CUSTOM"];
-						    tiersHexcode.Clear().Append(TiersHex["CUSTOM"]);
+						    tiersHexCode.Clear().Append(TiersHex["CUSTOM"]);
 						    break;
 					    default: // itemRarity >= 9
 						    tier = i18n["CUSTOM2"];
 						    itemProperties.BackgroundColor = TiersHex["CUSTOM2"];
-						    tiersHexcode.Clear().Append(TiersHex["CUSTOM2"]);
+						    tiersHexCode.Clear().Append(TiersHex["CUSTOM2"]);
 						    break;
 				    }
 
@@ -1475,38 +1270,38 @@ public class ItemInfo(
 						    case var _ when itemValue < int.Parse(Tiers["COMMON_VALUE_FALLBACK"]):
 							    tier = i18n["COMMON"];
 							    itemProperties.BackgroundColor = TiersHex["COMMON"];
-							    tiersHexcode.Clear().Append(TiersHex["COMMON"]);
+							    tiersHexCode.Clear().Append(TiersHex["COMMON"]);
 							    break;
 						    case var _ when itemValue < int.Parse(Tiers["RARE_VALUE_FALLBACK"]):
 							    tier = i18n["RARE"];
 							    itemProperties.BackgroundColor = TiersHex["RARE"];
-							    tiersHexcode.Clear().Append(TiersHex["RARE"]);
+							    tiersHexCode.Clear().Append(TiersHex["RARE"]);
 							    break;
 						    case var _ when itemValue < int.Parse(Tiers["EPIC_VALUE_FALLBACK"]):
 							    tier = i18n["EPIC"];
 							    itemProperties.BackgroundColor = TiersHex["EPIC"];
-							    tiersHexcode.Clear().Append(TiersHex["EPIC"]);
+							    tiersHexCode.Clear().Append(TiersHex["EPIC"]);
 							    break;
 						    case var _ when itemValue < int.Parse(Tiers["LEGENDARY_VALUE_FALLBACK"]):
 							    tier = i18n["LEGENDARY"];
 							    itemProperties.BackgroundColor = TiersHex["LEGENDARY"];
-							    tiersHexcode.Clear().Append(TiersHex["LEGENDARY"]);
+							    tiersHexCode.Clear().Append(TiersHex["LEGENDARY"]);
 							    break;
 						    case var _ when itemValue < int.Parse(Tiers["UBER_VALUE_FALLBACK"]):
 							    tier = i18n["UBER"];
 							    itemProperties.BackgroundColor = TiersHex["UBER"];
-							    tiersHexcode.Clear().Append(TiersHex["UBER"]);
+							    tiersHexCode.Clear().Append(TiersHex["UBER"]);
 							    break;
 						    default:
 							    tier = i18n["UNOBTAINIUM"];
 							    itemProperties.BackgroundColor = TiersHex["UNOBTAINIUM"];
-							    tiersHexcode.Clear().Append(TiersHex["UNOBTAINIUM"]);
+							    tiersHexCode.Clear().Append(TiersHex["UNOBTAINIUM"]);
 							    break;
 					    }
 				    }
 				    
 				    if (Config.ModRarityRecolor.AddColorToName)
-						Utils.AddColorToName(itemId, tiersHexcode.ToString(), UserLocale);
+						Utils.AddColorToName(itemId, tiersHexCode.ToString(), UserLocale);
 				    
 				    Utils.AddColorToShortName(itemId, TiersHex["COMMON"], UserLocale);
 
@@ -1515,42 +1310,37 @@ public class ItemInfo(
 				    {
 					    ItemDescription[itemId].PriceString += " | " +
 					                                           "<color=" +
-					                                           tiersHexcode +
+					                                           tiersHexCode +
 					                                           ">" +
 					                                           tier +
 					                                           "</color>\n\n";
-					    /*
-					    priceString.Append(" | " +
-					                       "<color=" +
-					                       tiersHexcode +
-					                       ">" +
-					                       tier +
-					                       "</color>\n\n");
-					    */
 				    }
 			    }
 		    }
-		    
-		    /*
-		    descriptionString.Append(priceString.ToString() +
-		                             headsetDescription +
-		                             armorDurabilityString +
-		                             slotEfficiencyString +
-		                             usedForQuestsString +
-		                             usedForHideoutString +
-		                             barterString +
-		                             productionString +
-		                             usedForCraftingString +
-		                             usedForBarterString +
-		                             advancedAmmoInfoString);
-		    */
 	    }
+	    
+	    logger.Info("[ItemInfo] Processing additional info...");
 
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
+		    
 		    descriptionString.Clear();
 
 		    MongoId itemId = kvp.Key;
+		    TemplateItem templateItem = kvp.Value;
+		    HandbookItem? itemInHandbook = Utils.GetItemInHandbook(itemId);
+		    TemplateItemProperties? itemProperties = templateItem.Properties;
+		    
+		    if (itemProperties is null)
+			    continue;
+
+		    bool isQuestItem = itemProperties.QuestItem ?? false;
+
+		    if (templateItem.Type != "Item" || // Check if the item is a real item and not a "node" type.
+		        itemInHandbook is null || // Ignore "useless" items
+		        isQuestItem || // Ignore quest items.
+		        templateItem.Parent == "543be5dd4bdc2deb348b4569") // Ignore currencies.
+			    continue;
 		    
 		    if (Config.ModHideoutInfo.Enabled)
 		    {
@@ -1558,7 +1348,6 @@ public class ItemInfo(
 
 			    if (itemHideoutInfo.Length > 1)
 				    ItemDescription[itemId].UsedForHideoutString = itemHideoutInfo + "\n";
-			    //usedForHideoutString.Clear().Append(itemHideoutInfo + "\n");
 		    }
 		    
 		    if (Config.ModProductionInfo.Enabled)
@@ -1567,14 +1356,6 @@ public class ItemInfo(
 
 			    if (productionInfo.Length > 1)
 				    ItemDescription[itemId].ProductionString = productionInfo + "\n";
-			    //productionString.Clear().Append(productionInfo + "\n");
-		    }
-
-		    if (Config.ModBarterResourceInfo.Enabled)
-		    {
-			    if (barterResourceInfo.Length > 1)
-				    ItemDescription[itemId].UsedForBarterString = barterResourceInfo + "\n";
-			    //usedForBarterString.Clear().Append(barterResourceInfo + "\n");
 		    }
 		    
 		    if (Config.ModCraftingMaterialInfo.Enabled)
@@ -1583,7 +1364,14 @@ public class ItemInfo(
 
 			    if (itemCraftingMaterialInfo.Length > 1)
 				    ItemDescription[itemId].UsedForCraftingString = itemCraftingMaterialInfo + "\n";
-			    //usedForCraftingString.Clear().Append(itemCraftingMaterialInfo + "\n");
+		    }
+		    
+		    if (Config.ModBarterResourceInfo.Enabled)
+		    {
+			    string barterResourceInfo = Utils.BarterResourceInfoGenerator(itemId, UserLocale);
+			    
+			    if (barterResourceInfo.Length > 1)
+				    ItemDescription[itemId].UsedForBarterString = barterResourceInfo + "\n";
 		    }
 		    
 		    descriptionString.Append(ItemDescription[itemId].PriceString +

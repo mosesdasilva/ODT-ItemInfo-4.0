@@ -540,7 +540,7 @@ public static class Utils
 		catch (Exception ex)
 		{
 			_logger.Warning("[ItemInfo] BarterResolver for item \"" +
-							(GetItemName(itemId)) +
+							GetItemName(itemId) +
 							"\" failed because of another mod. Continuing safely. Exception: " + ex);
 		}
 	
@@ -692,7 +692,7 @@ public static class Utils
 											barterLoyaltyLevel + 
 											" > " + 
 											GetItemName(barterForItem, locale));
-	
+					
 					double totalBarterPrice = 0;
 					
 					extendedBarterString.Clear().Append(" < … + ");
