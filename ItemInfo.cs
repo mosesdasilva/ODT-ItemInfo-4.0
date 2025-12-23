@@ -1393,6 +1393,15 @@ public class ItemInfo(
 		                     itemName);
 		    
 	    }
+	    
+	    JsonSerializerOptions options = new JsonSerializerOptions
+	    {
+		    WriteIndented = true
+	    };
+	    
+	    string jsonString = JsonSerializer.Serialize(EasyAmmoName, options);
+	    
+	    File.WriteAllText(PathToMod + "/config/easyammoname.json", jsonString);
     }
 }
 
