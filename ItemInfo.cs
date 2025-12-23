@@ -700,8 +700,8 @@ public class ItemInfo(
 		    
 		    Utils.RefreshName(itemId, UserLocale);
 		    Utils.RefreshShortName(itemId, UserLocale);
-
-		    itemName.Append(Utils._locales[UserLocale][itemId + " Name"]);
+		    
+		    itemName.Append(Utils.GetItemName(kvp.Key, UserLocale));
 		    itemName.Append(" | " + Utils.GetItemShortName(kvp.Key, UserLocale));
 
 #if DEBUG
