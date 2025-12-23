@@ -1,5 +1,5 @@
 {
-	"_SELECT YOUR LANGUAGE IN UserLocale CONFIGURATION BELOW. USE ONE OF THESE LANGUAGE CODES": "ch, cz, en, es-mx, es, fr, ge, hu, it, jp, kr, pl, po, ru, sk, tu",
+	"_SELECT YOUR LANGUAGE IN UserLocale CONFIGURATION BELOW. USE ONE OF THESE LANGUAGE CODES": "zh-cn, cs, en, es, fr, de, hu, it, ja, ko, pl, ru",
 	"UserLocale": "en",
 	"HideLanguageAlert": true,
 	"FormatPrice": true,
