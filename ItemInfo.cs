@@ -414,6 +414,7 @@ public class ItemInfo(
 	public required Dictionary<string, string> i18n { get; set; }
 	public required Dictionary<string, string> Localization { get; set; }
 	public string PathToMod { get; set; }
+	public Dictionary<MongoId, ModItemDescription> ItemDescription { get; set; } = new();
 	
     public Task OnLoad()
     {
@@ -674,7 +675,6 @@ public class ItemInfo(
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
 		    // Clearing all vars
-		    descriptionString.Clear();
 		    priceString.Clear();
 		    barterString.Clear();
 		    productionString.Clear();
@@ -695,6 +695,7 @@ public class ItemInfo(
 		    addToShortName.Clear();
 		    
 		    MongoId itemId = kvp.Key;
+		    ItemDescription[itemId] = new ModItemDescription();
 		    TemplateItem templateItem = kvp.Value;
 		    HandbookItem? itemInHandbook = Utils.GetItemInHandbook(itemId);
 		    TemplateItemProperties? itemProperties = templateItem.Properties;
@@ -888,6 +889,33 @@ public class ItemInfo(
 				    
 				    ArmorType armor = Armors[armorMaterial];
 
+				    ItemDescription[itemId].ArmorDurabilityString = (Config.ModArmorInfo.AddArmorClassInfo
+					                                                    ? i18n["Armorclass"] +
+					                                                      ": " +
+					                                                      itemProperties.ArmorClass +
+					                                                      " | "
+					                                                    : "") +
+				                                                    i18n["Effectivedurability"] +
+				                                                    ": " +
+				                                                    Math.Round((itemProperties.MaxDurability ?? 0) /
+				                                                               armor.Destructibility) +
+				                                                    " (" +
+				                                                    i18n["Max"] +
+				                                                    ": " +
+				                                                    Math.Round(itemProperties.MaxDurability ?? 0) +
+				                                                    " x " +
+				                                                    Localization["Mat" + armorMaterial] +
+				                                                    ": " +
+				                                                    Math.Round(1 / armor.Destructibility, 1) +
+				                                                    ") | " +
+				                                                    i18n["Repairdegradation"] +
+				                                                    ": " +
+				                                                    Math.Round(armor.MinRepairDegradation * 100) +
+				                                                    "% - " +
+				                                                    Math.Round(armor.MaxRepairDegradation * 100) +
+				                                                    "%\n\n";
+
+				    /*
 				    armorDurabilityString.Append((Config.ModArmorInfo.AddArmorClassInfo
 													 ? i18n["Armorclass"] +
 													   ": " +
@@ -912,6 +940,7 @@ public class ItemInfo(
 												 "% - " +
 												 Math.Round(armor.MaxRepairDegradation * 100) +
 												 "%\n\n");
+					*/
 
 				    addToName.Clear().Append(" (" +
 										   itemProperties.ArmorClass +
@@ -937,7 +966,103 @@ public class ItemInfo(
 			    if (templateItem.Parent == "5485a8684bdc2da71d8b4567")
 			    {
 				    TemplateItemProperties ammoProps = itemProperties;
-				    
+
+				    ItemDescription[itemId].AdvancedAmmoInfoString = "Damage: " +
+				                                                     ammoProps.Damage +
+				                                                     "\nPenetration Power: " +
+				                                                     ammoProps.PenetrationPower +
+				                                                     "\nArmor Damage: " +
+				                                                     ammoProps.ArmorDamage +
+				                                                     (ammoProps.ProjectileCount > 1
+					                                                     ? "\nProjectile Count: " +
+					                                                       ammoProps.ProjectileCount
+					                                                     : "") +
+				                                                     (ammoProps.BuckshotBullets > 0
+					                                                     ? "\nBuckshot Bullets: " +
+					                                                       ammoProps.BuckshotBullets
+					                                                     : "") +
+				                                                     "\nInitial Speed: " +
+				                                                     ammoProps.InitialSpeed +
+				                                                     "\nSpeed Retardation: " +
+				                                                     ammoProps.SpeedRetardation +
+				                                                     "\nBallistic Coeficient: " +
+				                                                     ammoProps.BallisticCoeficient +
+				                                                     "\nAmmo Tooltip Class: " +
+				                                                     ammoProps.AmmoTooltipClass +
+				                                                     "\nFragmentation Chance: " +
+				                                                     (Math.Round((ammoProps.FragmentationChance ?? 0) *
+					                                                      100) + "%" +
+				                                                      (ammoProps.MaxFragmentsCount > 1
+					                                                      ? "\nMin Fragments Count: " +
+					                                                        ammoProps.MinFragmentsCount +
+					                                                        "\nMax Fragments Count: " +
+					                                                        ammoProps.MaxFragmentsCount
+					                                                      : "")) +
+				                                                     "\nRicochet Chance: " +
+				                                                     Math.Round((ammoProps.RicochetChance ?? 0) * 100) +
+				                                                     "%" +
+				                                                     "\nMisfire Chance: " +
+				                                                     Math.Round((ammoProps.MisfireChance ?? 0) * 100) +
+				                                                     "%" +
+				                                                     "\nMalf Feed Chance: " +
+				                                                     Math.Round((ammoProps.MalfFeedChance ?? 0) * 100) +
+				                                                     "%" +
+				                                                     "\nMalf Misfire Chance: " +
+				                                                     Math.Round(
+					                                                     (ammoProps.MalfMisfireChance ?? 0) * 100) +
+				                                                     "%" +
+				                                                     "\nDurability Burn Modificator: " +
+				                                                     ammoProps.DurabilityBurnModificator +
+				                                                     "\nHeat Factor: " +
+				                                                     ammoProps.HeatFactor +
+				                                                     "\nHeavy blleding Delta: " +
+				                                                     ammoProps.HeavyBleedingDelta +
+				                                                     "\nLight Bleeding Delta: " +
+				                                                     ammoProps.LightBleedingDelta +
+				                                                     "\nStamina Burn Per Damage: " +
+				                                                     ammoProps.StaminaBurnPerDamage +
+				                                                     (ammoProps.Tracer ?? false
+					                                                     ? "\nTracer: Yes" +
+					                                                       "\nTracer Color: " +
+					                                                       ammoProps.TracerColor +
+					                                                       "\nTracer Distance: " +
+					                                                       ammoProps.TracerDistance
+					                                                     : "Tracer: No") +
+				                                                     "\nPenetration Chance Obstacle: " +
+				                                                     ammoProps.PenetrationChanceObstacle +
+				                                                     "\nPenetration Damage Mod: " +
+				                                                     ammoProps.PenetrationDamageMod +
+				                                                     "\nPenetration Power Diviation: " +
+				                                                     ammoProps.PenetrationPowerDiviation +
+				                                                     "\nAccr(?): " +
+				                                                     ammoProps.AmmoAccr +
+				                                                     "\nDist(?): " +
+				                                                     ammoProps.AmmoDist +
+				                                                     "\nHear(?): " +
+				                                                     ammoProps.AmmoHear +
+				                                                     "\nRec(?): " +
+				                                                     ammoProps.AmmoRec +
+				                                                     "\nShift Chance(?): " +
+				                                                     ammoProps.AmmoShiftChance +
+				                                                     (ammoProps.ExplosionStrength > 0
+					                                                     ? "\nExplosion Strength: " +
+					                                                       ammoProps.ExplosionStrength +
+					                                                       "\nMax Explosion Distance: " +
+					                                                       ammoProps.MaxExplosionDistance +
+					                                                       "\nExplosion Type: " +
+					                                                       ammoProps.ExplosionType +
+					                                                       "\nHasGrenadeComponent: " +
+					                                                       ammoProps.HasGrenaderComponent
+					                                                     : "") +
+				                                                     "\nBullet Mass Gram: " +
+				                                                     ammoProps.BulletMassGram +
+				                                                     "\nBullet Diameter Millimeters: " +
+				                                                     ammoProps.BulletDiameterMilimeters +
+				                                                     "\nWeight: " +
+				                                                     ammoProps.Weight +
+				                                                     "\n\n";
+					    
+				    /*
 				    advancedAmmoInfoString.Append("Damage: " +
 												 ammoProps.Damage +
 												 "\nPenetration Power: " +
@@ -1030,6 +1155,7 @@ public class ItemInfo(
 												  "\nWeight: " +
 												  ammoProps.Weight +
 												  "\n\n");
+					*/
 			    }
 		    }
 
@@ -1051,6 +1177,16 @@ public class ItemInfo(
 
 					    double slotEfficiency = Math.Round((double)totalSlots / ((itemProperties.Width ?? 1) * (itemProperties.Height ?? 1)) , 2);
 
+					    ItemDescription[itemId].SlotEfficiencyString = i18n["Slotefficiency"] +
+					                                                   ": x" +
+					                                                   slotEfficiency +
+					                                                   " (" +
+					                                                   totalSlots +
+					                                                   "/" +
+					                                                   itemProperties.Width * itemProperties.Height +
+					                                                   ")\n\n";
+					    
+					    /*
 					    slotEfficiencyString.Append(i18n["Slotefficiency"] +
 													": x" +
 													slotEfficiency +
@@ -1059,6 +1195,7 @@ public class ItemInfo(
 													"/" +
 													itemProperties.Width * itemProperties.Height +
 													")\n\n");
+						*/
 				    }
 			    }
 		    }
@@ -1118,6 +1255,28 @@ public class ItemInfo(
 		    }
 
 		    if (Config.ModPriceInfo.Enabled)
+			    ItemDescription[itemId].PriceString = (Config.ModPriceInfo.AddFleaPrice
+				                                          ? i18n["Fleaprice"] +
+				                                            ": " +
+				                                            (fleaPriceString == i18n["BANNED"]
+					                                            ? "BANNED"
+					                                            : Utils.FormatPrice(fleaPrice) +
+					                                              (fleaPrice > 0 ? "₽" : "")) +
+				                                            " | "
+				                                          : "") +
+			                                          (Config.ModPriceInfo.AddItemValue
+				                                          ? i18n["ItemValue"] +
+				                                            ": " +
+				                                            Utils.FormatPrice(itemInHandbook.Price ?? 0) +
+				                                            " | "
+				                                          : "") +
+			                                          i18n["Valuation1"] +
+			                                          itemBestTraderName +
+			                                          i18n["Valuation2"] +
+			                                          ": " +
+			                                          Utils.FormatPrice(traderPrice) +
+			                                          "₽";
+				/*
 			    priceString.Append((Config.ModPriceInfo.AddFleaPrice
 										? i18n["Fleaprice"] +
 										  ": " +
@@ -1138,6 +1297,7 @@ public class ItemInfo(
 									": " +
 									Utils.FormatPrice(traderPrice) +
 									"₽");
+			*/
 
 		    if (Config.ModHeadsetInfo.Enabled)
 		    {
@@ -1146,6 +1306,35 @@ public class ItemInfo(
 				    double? gain = itemProperties.CompressorGain;
 				    double? thresh = itemProperties.CompressorThreshold;
 
+				    ItemDescription[itemId].HeadsetDescription = "<color=#f59542>" +
+				                                                 i18n["AmbientVolume"] +
+				                                                 ": " +
+				                                                 Math.Round(
+					                                                 ((itemProperties.AmbientCompressorSendLevel ??
+					                                                   -10) + 10 +
+					                                                  (itemProperties
+						                                                   .EffectsReturnsGrEnvCommonCompressorSendLeveloupVolume ??
+					                                                   -7) + 7 +
+					                                                  (itemProperties.EnvNatureCompressorSendLevel ??
+					                                                   -5) + 5 +
+					                                                  (itemProperties.EnvTechnicalCompressorSendLevel ??
+					                                                   -7) + 7) * 10) / 10 +
+				                                                 "db</color> | " +
+				                                                 i18n["Boost"] +
+				                                                 ": +" +
+				                                                 gain + Math.Abs((thresh ?? -20) + 20) +
+				                                                 "db" +
+				                                                 (itemProperties.Distortion > 0
+					                                                 ? " | " +
+					                                                   i18n["Distortion"] +
+					                                                   ": " +
+					                                                   Math.Round(
+						                                                   (itemProperties.Distortion ?? 0) * 100) +
+					                                                   "%"
+					                                                 : "") +
+				                                                 "\n\n";
+
+				    /*
 				    headsetDescription.Append("<color=#f59542>" +
 				                              i18n["AmbientVolume"] +
 				                              ": " +
@@ -1166,55 +1355,28 @@ public class ItemInfo(
 					                                "%"
 					                              : "") +
 				                              "\n\n");
+				    */
 			    }
 		    }
 
 		    if (Config.ModBarterInfo.Enabled)
 		    {
 			    if (barterInfo.Item2.Length > 1)
-				    barterString.Clear().Append(barterInfo.Item2 + "\n");
-		    }
-
-		    if (Config.ModProductionInfo.Enabled)
-		    {
-			    string productionInfo = Utils.ProductionGenerator(itemId, UserLocale);
-
-			    if (productionInfo.Length > 1)
-				    productionString.Clear().Append(productionInfo + "\n");
-		    }
-
-		    if (Config.ModBarterResourceInfo.Enabled)
-		    {
-			    if (barterResourceInfo.Length > 1)
-				    usedForBarterString.Clear().Append(barterResourceInfo + "\n");
+				    ItemDescription[itemId].BarterString = barterInfo.Item2 + "\n";
+			    //barterString.Clear().Append(barterInfo.Item2 + "\n");
 		    }
 		    
 		    if (Config.ModQuestInfo.Enabled)
 		    {
 			    if (itemQuestInfo.Length > 1)
 			    {
-				    usedForQuestsString.Clear().Append(itemQuestInfo + "\n");
+				    ItemDescription[itemId].UsedForQuestsString = itemQuestInfo + "\n";
+				    //usedForQuestsString.Clear().Append(itemQuestInfo + "\n");
 
 				    if (Config.ModQuestInfo.FirInName &&
 				        itemQuestInfo.Contains("✔"))
 					    Utils.AddToName(itemId, "✔", "append");
 			    }
-		    }
-
-		    if (Config.ModHideoutInfo.Enabled)
-		    {
-			    string itemHideoutInfo = Utils.HideoutInfoGenerator(itemId, UserLocale);
-
-			    if (itemHideoutInfo.Length > 1)
-				    usedForHideoutString.Clear().Append(itemHideoutInfo + "\n");
-		    }
-
-		    if (Config.ModCraftingMaterialInfo.Enabled)
-		    {
-			    string itemCraftingMaterialInfo = Utils.CraftingMaterialInfoGenerator(itemId, UserLocale);
-
-			    if (itemCraftingMaterialInfo.Length > 1)
-				    usedForCraftingString.Clear().Append(itemCraftingMaterialInfo + "\n");
 		    }
 		    
 		    // Rarity recolor handling
@@ -1351,16 +1513,25 @@ public class ItemInfo(
 				    if (Config.ModRarityRecolor.AddTierNameToPricesInfo &&
 				        !string.IsNullOrEmpty(tier))
 				    {
+					    ItemDescription[itemId].PriceString += " | " +
+					                                           "<color=" +
+					                                           tiersHexcode +
+					                                           ">" +
+					                                           tier +
+					                                           "</color>\n\n";
+					    /*
 					    priceString.Append(" | " +
 					                       "<color=" +
 					                       tiersHexcode +
 					                       ">" +
 					                       tier +
 					                       "</color>\n\n");
+					    */
 				    }
 			    }
 		    }
 		    
+		    /*
 		    descriptionString.Append(priceString.ToString() +
 		                             headsetDescription +
 		                             armorDurabilityString +
@@ -1372,26 +1543,62 @@ public class ItemInfo(
 		                             usedForCraftingString +
 		                             usedForBarterString +
 		                             advancedAmmoInfoString);
+		    */
+	    }
 
+	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
+	    {
+		    descriptionString.Clear();
+
+		    MongoId itemId = kvp.Key;
+		    
+		    if (Config.ModHideoutInfo.Enabled)
+		    {
+			    string itemHideoutInfo = Utils.HideoutInfoGenerator(itemId, UserLocale);
+
+			    if (itemHideoutInfo.Length > 1)
+				    ItemDescription[itemId].UsedForHideoutString = itemHideoutInfo + "\n";
+			    //usedForHideoutString.Clear().Append(itemHideoutInfo + "\n");
+		    }
+		    
+		    if (Config.ModProductionInfo.Enabled)
+		    {
+			    string productionInfo = Utils.ProductionGenerator(itemId, UserLocale);
+
+			    if (productionInfo.Length > 1)
+				    ItemDescription[itemId].ProductionString = productionInfo + "\n";
+			    //productionString.Clear().Append(productionInfo + "\n");
+		    }
+
+		    if (Config.ModBarterResourceInfo.Enabled)
+		    {
+			    if (barterResourceInfo.Length > 1)
+				    ItemDescription[itemId].UsedForBarterString = barterResourceInfo + "\n";
+			    //usedForBarterString.Clear().Append(barterResourceInfo + "\n");
+		    }
+		    
+		    if (Config.ModCraftingMaterialInfo.Enabled)
+		    {
+			    string itemCraftingMaterialInfo = Utils.CraftingMaterialInfoGenerator(itemId, UserLocale);
+
+			    if (itemCraftingMaterialInfo.Length > 1)
+				    ItemDescription[itemId].UsedForCraftingString = itemCraftingMaterialInfo + "\n";
+			    //usedForCraftingString.Clear().Append(itemCraftingMaterialInfo + "\n");
+		    }
+		    
+		    descriptionString.Append(ItemDescription[itemId].PriceString +
+		                             ItemDescription[itemId].HeadsetDescription +
+		                             ItemDescription[itemId].ArmorDurabilityString +
+		                             ItemDescription[itemId].SlotEfficiencyString +
+		                             ItemDescription[itemId].UsedForQuestsString +
+		                             ItemDescription[itemId].UsedForHideoutString +
+		                             ItemDescription[itemId].BarterString +
+		                             ItemDescription[itemId].ProductionString +
+		                             ItemDescription[itemId].UsedForCraftingString +
+		                             ItemDescription[itemId].UsedForBarterString +
+		                             ItemDescription[itemId].AdvancedAmmoInfoString);
+		    
 		    Utils.AddToDescription(itemId, descriptionString.ToString(), "prepend");
-		    
-		    bool debug = false;
-
-		    if (!debug) 
-			    continue;
-			    
-		    /*logger.Info("Item \"" +
-		                itemName +
-		                "\" : " +
-		                descriptionString);*/
-		    
-		    logString.Append("Processing item " +
-		                     (a + 1) +
-		                     "/" +
-		                     Items.Count +
-		                     ": " +
-		                     itemName);
-		    
 	    }
 	    
 	    JsonSerializerOptions options = new JsonSerializerOptions
