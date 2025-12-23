@@ -1,8 +1,14 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using ItemInfo.Models;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
@@ -1188,7 +1194,7 @@ public class ItemInfo(
 			    if (barterInfo.Item2.Length > 1)
 				    barterString.Clear().Append(barterInfo.Item2 + "\n");
 		    }
-
+		    
 		    if (Config.ModProductionInfo.Enabled)
 		    {
 			    string productionInfo = Utils.ProductionGenerator(itemId, UserLocale);
@@ -1222,7 +1228,7 @@ public class ItemInfo(
 			    if (itemHideoutInfo.Length > 1)
 				    usedForHideoutString.Clear().Append(itemHideoutInfo + "\n");
 		    }
-
+		    
 		    if (Config.ModCraftingMaterialInfo.Enabled)
 		    {
 			    string itemCraftingMaterialInfo = Utils.CraftingMaterialInfoGenerator(itemId, UserLocale);
