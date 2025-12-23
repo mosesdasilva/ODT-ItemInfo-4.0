@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using ItemInfo.Models;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
@@ -405,7 +399,6 @@ public class ItemInfo(
 
 	private Timer? _timer;
 	public required ModConfig Config;
-	public required ModEasyAmmoName EasyAmmoName { get; set; }
 	public required ModTiers Tiers { get; set; }
 	public required ModTiersHex TiersHex { get; set; }
 	public required ModTranslation Translation { get; set; }
@@ -427,7 +420,6 @@ public class ItemInfo(
 		
 	    // Get configs
 	    Config = modHelper.GetJsonDataFromFile<ModConfig>(PathToMod, "config/config.json");
-	    EasyAmmoName = modHelper.GetJsonDataFromFile<ModEasyAmmoName>(PathToMod, "config/easyammoname.json");
 	    
 	    // Get tiers list
 	    Tiers = modHelper.GetJsonDataFromFile<ModTiers>(PathToMod, "config/tiers.json");
@@ -501,7 +493,6 @@ public class ItemInfo(
     {
 	    TranslationDebug();
 	    QuestRewards();
-	    EasyAmmoNameHandling();
 	    
 	    Stopwatch stopwatch = Stopwatch.StartNew();
 	    
@@ -618,42 +609,6 @@ public class ItemInfo(
 	    }
     }
 
-    public void EasyAmmoNameHandling()
-    {
-	    if (!EasyAmmoName.Enabled) 
-		    return;
-	    
-	    foreach (KeyValuePair<string, ModEasyAmmoName.Items> kvpAmmoName in EasyAmmoName.ModItems)
-	    {
-		    string itemTpl = kvpAmmoName.Key;
-		    ModEasyAmmoName.Items ammoNames = kvpAmmoName.Value;
-
-		    if (!string.IsNullOrEmpty(ammoNames.Name) &&
-		        Items.ContainsKey(itemTpl))
-				Utils._locales[UserLocale][itemTpl + " Name"] = ammoNames.Name;
-
-		    if (string.IsNullOrEmpty(ammoNames.ShortName) ||
-		        !Items.ContainsKey(itemTpl)) 
-			    continue;
-		    
-		    if (ammoNames.ShortName.Length > 9)
-		    {
-			    logger.Warning("Provided shortname was too long! Shortnames have a maximum of 9 characters.");
-			    logger.Warning("Trimming " +
-			                   ammoNames.ShortName +
-			                   " to " +
-			                   ammoNames.ShortName.Substring(0, 9));
-
-			    ammoNames.ShortName = ammoNames.ShortName.Substring(0, 9);
-		    }
-		    
-		    Utils._locales[UserLocale][itemTpl + " ShortName"] = ammoNames.ShortName;
-		    
-		    // logger.Info("Name: " + Utils._locales[UserLocale][itemTpl + " Name"]);
-		    // logger.Info("ShortName: " + Utils._locales[UserLocale][itemTpl + " ShortName"]);
-	    }
-    }
-
     private void ItemHandling()
     {
 	    int a = 0;
@@ -740,9 +695,21 @@ public class ItemInfo(
 		    
 		    Utils.RefreshName(itemId, UserLocale);
 		    Utils.RefreshShortName(itemId, UserLocale);
-		    
-		    itemName.Append(Utils.GetItemName(kvp.Key, UserLocale));
+
+		    itemName.Append(Utils._locales[UserLocale][itemId + " Name"]);
 		    itemName.Append(" | " + Utils.GetItemShortName(kvp.Key, UserLocale));
+
+#if DEBUG
+		    logString.Append("Processing item " +
+		                     (a + 1) +
+		                     "/" +
+		                     Items.Count +
+		                     ": " +
+		                     itemName);
+
+		    logger.Info(logString.ToString());
+		    a += 1;
+#endif
 
 		    // UseBsgStaticFleaBanList
 		    if (Config.UseBsgStaticFleaBanList.Enabled)
@@ -799,41 +766,6 @@ public class ItemInfo(
 					    fleaPriceString = "";
 			    }
 		    }
-
-		    if (EasyAmmoName.Enabled &&
-		        (Items[itemId].Parent == "5485a8684bdc2da71d8b4567" ||
-		         Items[itemId].Parent == "543be5cb4bdc2deb348b4568"))
-		    {
-			    string? templateItemName = templateItem.Name;
-			    string? ammoType = itemProperties.AmmoType;
-			    
-			    if (templateItemName is not null)
-			    {
-				    if (!EasyAmmoName.ModItems.ContainsKey(itemId) &&
-				        !templateItemName.ToLower().Contains("shrapnel") &&
-				        !templateItemName.ToLower().Contains("patron_rsp") &&
-				        !templateItemName.ToLower().Contains("patron_26x75"))
-				    {
-					    if (!string.IsNullOrEmpty(ammoType) ||
-					        ammoType == "bullet" ||
-					        ammoType == "grenade")
-					    {
-						    logger.Warning("the item :" +
-						                   templateItemName +
-						                   " is not in tpl list: " +
-						                   itemId);
-
-						    EasyAmmoName.ModItems[itemId] = new ModEasyAmmoName.Items()
-						    {
-								Name = "FIXME " + Localization[itemId + " Name"],
-								ShortName = Localization[itemId + " ShortName"],
-								Description = "",
-						    };
-					    }
-
-				    }
-			    }
-		    }
 			    
 		    // BulletStatsInName
 		    if (Config.ModBulletStatsInName.Enabled)
@@ -850,11 +782,7 @@ public class ItemInfo(
 				                             itemProperties.PenetrationPower +
 				                             ")");
 
-				    Utils.AddToName(itemId,
-					    addToName.ToString(),
-					    "append");
-
-				    Utils._locales[UserLocale][itemId + " Name"] += addToName;
+				    Utils.AddToName(itemId, addToName.ToString(), "append");
 			    } 
 			    else if (itemProperties.Name != null &&
 			             itemProperties.Name.Contains("ammo_box"))
@@ -873,11 +801,7 @@ public class ItemInfo(
 				                             ammoProperties.PenetrationPower +
 				                             ")");
 
-				    Utils.AddToName(itemId,
-					    addToName.ToString(),
-					    "append");
-
-				    Utils._locales[UserLocale][itemId + " Name"] += addToName;
+				    Utils.AddToName(itemId, addToName.ToString(), "append");
 			    }
 		    }
 		    
@@ -927,20 +851,10 @@ public class ItemInfo(
 												")");
 
 				    if (Config.ModArmorInfo.AddArmorToName)
-				    {
-					    Utils.AddToName(itemId,
-										addToName.ToString(),
-										"append");
-					    Utils._locales[UserLocale][itemId + " Name"] += addToName;
-				    }
+					    Utils.AddToName(itemId, addToName.ToString(), "append");
 
 				    if (Config.ModArmorInfo.AddArmorToShortName)
-				    {
-					    Utils.AddToShortName(itemId,
-											addToShortName.ToString(),
-											"append");
-					    Utils._locales[UserLocale][itemId + " ShortName"] += addToShortName;
-				    }
+					    Utils.AddToShortName(itemId, addToShortName.ToString(), "append");
 			    }
 		    }
 		    
@@ -1121,18 +1035,10 @@ public class ItemInfo(
 				    if (!string.IsNullOrEmpty(mark))
 				    {
 					    if (Config.ModMarkValuableItems.AddToShortName)
-					    {
 						    Utils.AddToShortName(itemId, mark + " ", "prepend");
-						    Utils._locales[UserLocale][itemId + " ShortName"] = mark + 
-							    " " +
-								Utils._locales[UserLocale][itemId + " ShortName"];
-					    }
 
 					    if (Config.ModMarkValuableItems.AddToName)
-					    {
 						    Utils.AddToName(itemId, " " + mark, "append");
-						    Utils._locales[UserLocale][itemId + " Name"] += " " + mark;
-					    }
 				    }
 			    }
 		    }
@@ -1194,7 +1100,7 @@ public class ItemInfo(
 			    if (barterInfo.Item2.Length > 1)
 				    barterString.Clear().Append(barterInfo.Item2 + "\n");
 		    }
-		    
+
 		    if (Config.ModProductionInfo.Enabled)
 		    {
 			    string productionInfo = Utils.ProductionGenerator(itemId, UserLocale);
@@ -1228,7 +1134,7 @@ public class ItemInfo(
 			    if (itemHideoutInfo.Length > 1)
 				    usedForHideoutString.Clear().Append(itemHideoutInfo + "\n");
 		    }
-		    
+
 		    if (Config.ModCraftingMaterialInfo.Enabled)
 		    {
 			    string itemCraftingMaterialInfo = Utils.CraftingMaterialInfoGenerator(itemId, UserLocale);
@@ -1395,27 +1301,24 @@ public class ItemInfo(
 
 		    Utils.AddToDescription(itemId, descriptionString.ToString(), "prepend");
 		    
-#if DEBUG
+		    bool debug = false;
+
+		    if (!debug) 
+			    continue;
+			    
+		    /*logger.Info("Item \"" +
+		                itemName +
+		                "\" : " +
+		                descriptionString);*/
+		    
 		    logString.Append("Processing item " +
 		                     (a + 1) +
 		                     "/" +
 		                     Items.Count +
 		                     ": " +
-		                     Utils._locales[UserLocale][itemId + " Name"]);
-
-		    logger.Info(logString.ToString());
-		    a += 1;
-#endif
+		                     itemName);
+		    
 	    }
-	    
-	    JsonSerializerOptions options = new JsonSerializerOptions
-	    {
-		    WriteIndented = true
-	    };
-	    
-	    string jsonString = JsonSerializer.Serialize(EasyAmmoName, options);
-	    
-	    File.WriteAllText(PathToMod + "/config/easyammoname.json", jsonString);
     }
 }
 
