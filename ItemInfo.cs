@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ItemInfo.Models;
@@ -618,19 +619,7 @@ public class ItemInfo(
     {
 	    int a = 0;
 	    StringBuilder descriptionString = new StringBuilder();
-	    StringBuilder priceString = new StringBuilder();
-	    StringBuilder barterString = new StringBuilder();
-	    StringBuilder productionString = new StringBuilder();
-	    StringBuilder usedForBarterString = new StringBuilder();
-	    StringBuilder usedForQuestsString = new StringBuilder();
-	    StringBuilder usedForHideoutString = new StringBuilder();
-	    StringBuilder usedForCraftingString = new StringBuilder();
-	    StringBuilder armorDurabilityString = new StringBuilder();
-	    StringBuilder slotEfficiencyString = new StringBuilder();
-	    StringBuilder headsetDescription = new StringBuilder();
-	    StringBuilder advancedAmmoInfoString = new StringBuilder();
 	    StringBuilder itemBestTraderName = new StringBuilder();
-	    StringBuilder barterResourceInfo = new StringBuilder();
 	    StringBuilder itemName = new StringBuilder();
 	    StringBuilder logString = new StringBuilder();
 	    StringBuilder tiersHexcode = new StringBuilder();
@@ -640,19 +629,7 @@ public class ItemInfo(
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
 		    // Clearing all vars
-		    priceString.Clear();
-		    barterString.Clear();
-		    productionString.Clear();
-		    usedForBarterString.Clear();
-		    usedForQuestsString.Clear();
-		    usedForHideoutString.Clear();
-		    usedForCraftingString.Clear();
-		    armorDurabilityString.Clear();
-		    slotEfficiencyString.Clear();
-		    headsetDescription.Clear();
-		    advancedAmmoInfoString.Clear();
 		    itemBestTraderName.Clear();
-		    barterResourceInfo.Clear();
 		    tiersHexcode.Clear();
 		    itemName.Clear();
 		    logString.Clear();
@@ -696,7 +673,6 @@ public class ItemInfo(
 		    string itemQuestInfo = Utils.QuestInfoGenerator(itemId, UserLocale);
 
 		    itemBestTraderName.Append(itemBestVendor.Item2);
-		    barterResourceInfo.Append(Utils.BarterResourceInfoGenerator(itemId, UserLocale));
 		    
 		    Utils.RefreshName(itemId, UserLocale);
 		    Utils.RefreshShortName(itemId, UserLocale);
@@ -1189,7 +1165,7 @@ public class ItemInfo(
 						    itemProperties.BackgroundColor = TiersHex["CUSTOM"];
 						    tiersHexcode.Clear().Append(TiersHex["CUSTOM"]);
 						    break;
-					    default: // itemRarity >= 9
+					    default: // itemRarity >= 9 or itemRarity == 0
 						    tier = i18n["CUSTOM2"];
 						    itemProperties.BackgroundColor = TiersHex["CUSTOM2"];
 						    tiersHexcode.Clear().Append(TiersHex["CUSTOM2"]);
@@ -1279,6 +1255,20 @@ public class ItemInfo(
 		    descriptionString.Clear();
 
 		    MongoId itemId = kvp.Key;
+		    TemplateItem templateItem = kvp.Value;
+		    HandbookItem? itemInHandbook = Utils.GetItemInHandbook(itemId);
+		    TemplateItemProperties? itemProperties = templateItem.Properties;
+		    
+		    if (itemProperties is null)
+			    continue;
+
+		    bool isQuestItem = itemProperties.QuestItem ?? false;
+
+		    if (templateItem.Type != "Item" || // Check if the item is a real item and not a "node" type.
+		        itemInHandbook is null || // Ignore "useless" items
+		        isQuestItem || // Ignore quest items.
+		        templateItem.Parent == "543be5dd4bdc2deb348b4569") // Ignore currencies.
+			    continue;
 		    
 		    if (Config.ModHideoutInfo.Enabled)
 		    {
@@ -1298,6 +1288,8 @@ public class ItemInfo(
 
 		    if (Config.ModBarterResourceInfo.Enabled)
 		    {
+			    string barterResourceInfo = Utils.BarterResourceInfoGenerator(itemId, UserLocale);
+			    
 			    if (barterResourceInfo.Length > 1)
 				    ItemDescription[itemId].UsedForBarterString = barterResourceInfo + "\n";
 		    }
