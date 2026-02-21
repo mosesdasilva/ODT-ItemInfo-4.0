@@ -136,7 +136,7 @@
 		"enabled": false,
 		"seconds": 5
 	},
-	"useBSGStaticFleaBanlist": {
+	"useBSGStaticFleaBanList": {
 		"_description": "For compatibility reasons with other mods that modify flea banned items",
 		"enabled": false
 	},
