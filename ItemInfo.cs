@@ -1,8 +1,14 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using ItemInfo.Models;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
@@ -701,7 +707,7 @@ public class ItemInfo(
 		    List<int> rarityArray = barterInfo.Item3;
 		    int itemRarity = rarityArray.Min();
 		    int slotDensity = Utils.GetItemSlotDensity(itemProperties);
-		    bool isBanned;
+		    bool isBanned = false;
 		    
 		    string fleaPriceString = fleaPrice.ToString(CultureInfo.CurrentCulture);
 		    string itemQuestInfo = Utils.QuestInfoGenerator(itemId, UserLocale);
@@ -728,9 +734,14 @@ public class ItemInfo(
 
 		    // UseBsgStaticFleaBanList
 		    if (Config.UseBsgStaticFleaBanList.Enabled)
-			    isBanned = true;
+		    {
+			    if (BsgBlacklist.Contains(itemId))
+					isBanned = true;
+		    }
 		    else
+		    {
 			    isBanned = !itemProperties.CanSellOnRagfair ?? false;
+		    }
 
 		    // Rarity handling
 		    if (isBanned)

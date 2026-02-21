@@ -888,7 +888,7 @@ public static class Utils
 
 		if (recipes is null)
 			return craftableString.ToString();
-
+		
 		foreach (HideoutProduction recipe in recipes)
 		{
 			if (itemId != recipe.EndProduct ||
