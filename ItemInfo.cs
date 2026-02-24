@@ -775,7 +775,7 @@ public class ItemInfo(
 			    {
 				    double? count = stackSlotsList[0].MaxCount;
 				    MongoId? ammo = stackSlotsList[0].Properties?.Filters?.ToList()[0].Filter?.ToList()[0];
-				    double? value = Utils.GetItemBestTrader(itemId).price;
+				    double? value = Utils.GetItemBestTrader(ammo!).price;
 				    
 				    if (value is not null &&
 				        count is not null)
