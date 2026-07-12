@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ItemInfo.Models;
+using ItemInfo.Recoloring;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Helpers;
@@ -47,16 +48,19 @@ public class ItemInfo(
 	ModHelper modHelper,
 	JsonUtil jsonUtil,
     DatabaseService databaseService,
-    LocaleService localeService,
-    ItemBaseClassService itemBaseClassService,
-	ItemHelper  itemHelper)
+	LocaleService localeService,
+	ItemBaseClassService itemBaseClassService,
+	ItemHelper itemHelper,
+	PresetHelper presetHelper)
     : IOnLoad // Implement the `IOnLoad` interface so that this mod can do something
 {
 	
 	private Timer? _timer;
+	private readonly StaticRecolorPassRunner _staticRecolorPassRunner = new();
 	public required ModConfig Config;
 	public required ModTiers Tiers { get; set; }
 	public required ModTiersHex TiersHex { get; set; }
+	private RecolorThresholds RecolorThresholds { get; set; } = RecolorThresholds.Defaults;
 	public required ModTranslation Translation { get; set; }
 	public required ModTranslationDebug ModTranslationDebug { get; set; }
 	public required ModBsgBlackList ModBsgBlackList { get; set; }
@@ -83,6 +87,7 @@ public class ItemInfo(
 	    
 	    // Get tiers list
 	    Tiers = modHelper.GetJsonDataFromFile<ModTiers>(PathToMod, "config/tiers.json");
+	    RecolorThresholds = ThresholdConfiguration.Load(File.ReadAllText(System.IO.Path.Combine(PathToMod, "config/tiers.json")), warning => logger.Warning(warning));
 	    TiersHex = modHelper.GetJsonDataFromFile<ModTiersHex>(PathToMod, "config/tiers_hex.json");
 	    
 	    // Get translations
@@ -155,13 +160,15 @@ public class ItemInfo(
     {
 	    TranslationDebug();
 	    QuestRewards();
-	    
-	    Stopwatch stopwatch = Stopwatch.StartNew();
-	    
-	    logger.Info("[ItemInfo] Processing items...");
-	    ItemHandling();
-	    stopwatch.Stop();
-	    logger.Info("[ItemInfo] Completed processing " + Items.Count +" items in " + stopwatch.ElapsedMilliseconds + " ms.");
+	    _staticRecolorPassRunner.RunOnce(() =>
+	    {
+		    Stopwatch stopwatch = Stopwatch.StartNew();
+
+		    logger.Info("[ItemInfo] Processing items...");
+		    ItemHandling();
+		    stopwatch.Stop();
+		    logger.Info("[ItemInfo] Completed processing " + Items.Count + " items in " + stopwatch.ElapsedMilliseconds + " ms.");
+	    });
     }
 
     private void TranslationDebug()
@@ -281,6 +288,16 @@ public class ItemInfo(
 	    StringBuilder tiersHexCode = new StringBuilder();
 	    StringBuilder addToName = new StringBuilder();
 	    StringBuilder addToShortName = new StringBuilder();
+	    var recolorSettings = new RecolorSettings
+	    {
+		    UseTraderBuyPriceForRecolor = Config.ModRarityRecolor.UseTraderBuyPriceForRecolor,
+		    MarkFleaMarketBannedItemsAsOverpowered = Config.ModRarityRecolor.MarkFleaMarketBannedItemsAsOverpowered,
+		    UsePenetrationForAmmoRecolor = Config.ModRarityRecolor.UsePenetrationForAmmoRecolor,
+		    UseArmorClassForRecolor = Config.ModRarityRecolor.UseArmorClassForRecolor,
+		    UseRigCapacityForRecolor = Config.ModRarityRecolor.UseRigCapacityForRecolor,
+		    UseBackpackCapacityForRecolor = Config.ModRarityRecolor.UseBackpackCapacityForRecolor
+	    };
+	    var staticRecolorPass = new StaticRecolorPass(recolorSettings, RecolorThresholds);
 	    
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
@@ -322,6 +339,7 @@ public class ItemInfo(
 		    ValueTuple<List<double>, string, List<int>> barterInfo = Utils.BarterInfoGenerator(itemBarters, UserLocale);
 		    List<int> rarityArray = barterInfo.Item3;
 		    int itemRarity = rarityArray.Min();
+		    int traderTierRarity = itemRarity;
 		    int slotDensity = Utils.GetItemSlotDensity(itemProperties);
 		    bool isBanned = false;
 		    
@@ -768,7 +786,8 @@ public class ItemInfo(
 		    
 		    // Rarity recolor handling
 		    if (Config.ModRarityRecolor.Enabled &&
-		        !Config.RarityRecolorBlacklist.Contains(templateItem.Parent))
+		        !Config.RarityRecolorBlacklist.Contains(templateItem.Parent) &&
+		        !Config.RarityRecolorBlacklist.Contains(itemId))
 		    {
 			    if ((!Config.ModRarityRecolor.BypassAmmoRecolor ||
 			         templateItem.Parent != BaseClasses.AMMO) &&
@@ -776,11 +795,36 @@ public class ItemInfo(
 			         (templateItem.Parent != BaseClasses.KEY_MECHANICAL &&
 			          templateItem.Parent != BaseClasses.KEYCARD)))
 			    {
-				    foreach (KeyValuePair<string, int> customItem in Config.ModRarityRecolor.CustomRarity)
+				    bool isAmmo = itemHelper.IsOfBaseclass(itemId, BaseClasses.AMMO);
+				    bool isArmor = itemHelper.IsOfBaseclass(itemId, BaseClasses.ARMOR);
+				    bool isRig = itemHelper.IsOfBaseclass(itemId, BaseClasses.VEST);
+				    bool isBackpack = itemHelper.IsOfBaseclass(itemId, BaseClasses.BACKPACK);
+				    var kind = isAmmo ? RecolorItemKind.Ammo
+					    : isArmor && isRig ? RecolorItemKind.ArmoredRig
+					    : isArmor ? RecolorItemKind.Armor
+					    : isRig ? RecolorItemKind.Rig
+					    : isBackpack ? RecolorItemKind.Backpack
+					    : RecolorItemKind.Normal;
+				    var grids = itemProperties.Grids?.Where(grid => grid.Properties is not null)
+					    .Select(grid => (grid.Properties!.CellsH ?? 0, grid.Properties.CellsV ?? 0)).ToList();
+				    Config.ModRarityRecolor.CustomRarity.TryGetValue(itemId, out int customRarity);
+				    int? defaultFrontPlateClass = null;
+				    if (kind is RecolorItemKind.Armor or RecolorItemKind.ArmoredRig)
 				    {
-					    if (customItem.Key == itemId)
-						    itemRarity = customItem.Value;
+					    var defaultPreset = presetHelper.GetDefaultPreset(itemId);
+					    var frontPlate = defaultPreset?.Items.FirstOrDefault(item =>
+						    item.SlotId is "mod_slot_plate_front" or "front_plate");
+					    if (frontPlate is not null && Items.TryGetValue(frontPlate.Template, out var frontPlateTemplate))
+						    defaultFrontPlateClass = frontPlateTemplate.Properties?.ArmorClass;
 				    }
+				    staticRecolorPass.Apply(
+					    new StaticRecolorRequest(
+						    new RecolorItem(itemId, templateItem.Parent, kind, traderTierRarity, isBanned, traderPrice,
+							    itemProperties.Width, itemProperties.Height, itemProperties.PenetrationPower,
+							    itemProperties.ArmorClass, itemProperties.ArmorClass, defaultFrontPlateClass, grids),
+						    tier => itemRarity = (int)tier,
+						    Custom: customRarity > 0 ? (RecolorTier?)customRarity : null),
+					    warning => logger.Warning(warning));
 				    
 				    string tier;
 				    
@@ -848,27 +892,27 @@ public class ItemInfo(
 
 					    switch (itemValue)
 					    {
-						    case var _ when itemValue < int.Parse(Tiers["COMMON_VALUE_FALLBACK"]):
+						    case var _ when itemValue < Tiers.GetNumber("COMMON_VALUE_FALLBACK"):
 							    tier = i18n["COMMON"];
 							    itemProperties.BackgroundColor = TiersHex["COMMON"];
 							    tiersHexCode.Clear().Append(TiersHex["COMMON"]);
 							    break;
-						    case var _ when itemValue < int.Parse(Tiers["RARE_VALUE_FALLBACK"]):
+						    case var _ when itemValue < Tiers.GetNumber("RARE_VALUE_FALLBACK"):
 							    tier = i18n["RARE"];
 							    itemProperties.BackgroundColor = TiersHex["RARE"];
 							    tiersHexCode.Clear().Append(TiersHex["RARE"]);
 							    break;
-						    case var _ when itemValue < int.Parse(Tiers["EPIC_VALUE_FALLBACK"]):
+						    case var _ when itemValue < Tiers.GetNumber("EPIC_VALUE_FALLBACK"):
 							    tier = i18n["EPIC"];
 							    itemProperties.BackgroundColor = TiersHex["EPIC"];
 							    tiersHexCode.Clear().Append(TiersHex["EPIC"]);
 							    break;
-						    case var _ when itemValue < int.Parse(Tiers["LEGENDARY_VALUE_FALLBACK"]):
+						    case var _ when itemValue < Tiers.GetNumber("LEGENDARY_VALUE_FALLBACK"):
 							    tier = i18n["LEGENDARY"];
 							    itemProperties.BackgroundColor = TiersHex["LEGENDARY"];
 							    tiersHexCode.Clear().Append(TiersHex["LEGENDARY"]);
 							    break;
-						    case var _ when itemValue < int.Parse(Tiers["UBER_VALUE_FALLBACK"]):
+						    case var _ when itemValue < Tiers.GetNumber("UBER_VALUE_FALLBACK"):
 							    tier = i18n["UBER"];
 							    itemProperties.BackgroundColor = TiersHex["UBER"];
 							    tiersHexCode.Clear().Append(TiersHex["UBER"]);
@@ -972,6 +1016,11 @@ public class ItemInfo(
     }
 }
 
-public class ModTiers : Dictionary<string, string>;
+public class ModTiers : Dictionary<string, JsonElement>
+{
+	public double GetNumber(string key) => this[key].ValueKind == JsonValueKind.String
+		? double.Parse(this[key].GetString()!, CultureInfo.InvariantCulture)
+		: this[key].GetDouble();
+}
 
 public class ModTiersHex : Dictionary<string, string>;

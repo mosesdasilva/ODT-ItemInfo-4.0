@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using ItemInfo.Models;
+using ItemInfo.Recoloring;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Eft.Hideout;
@@ -186,11 +187,9 @@ public static class Utils
     public static (double? price, string name, string parentId) GetItemBestTrader(string itemId)
     {
 	    HandbookItem? handbookItem = GetItemInHandbook(itemId);
-	    (double? Multi, string name) bestTrader = ResolveBestTrader(itemId);
+	    BestTraderBuyValue bestTrader = ResolveBestTraderBuyValue(itemId, handbookItem?.Price ?? 0);
 
-	    double? result = handbookItem?.Price * bestTrader.Multi;
-
-	    return new ValueTuple<double?, string, string>(result, bestTrader.name, handbookItem?.ParentId ?? "GetItemBestTrader() handbookItem");
+	    return new ValueTuple<double?, string, string>(bestTrader.Roubles, bestTrader.TraderName, handbookItem?.ParentId ?? "GetItemBestTrader() handbookItem");
     }
 
     public static double? GetFleaPrice(string itemId)
@@ -431,33 +430,40 @@ public static class Utils
 	    }
     }
 
-    public static (double? multi, string name) ResolveBestTrader(string itemId, string lang = "en")
+    public static BestTraderBuyValue ResolveBestTraderBuyValue(string itemId, double handbookRoubleValue, string lang = "en")
     {
-	    double? traderMulti = 0f;
-	    string traderName = "None";
 	    HashSet<MongoId> itemBaseClasses = _itemBaseClassService.GetItemBaseClasses(itemId);
+	    var offers = new List<TraderBuyOffer>();
 
-	    foreach (Trader trader in _tradersList)
+	    foreach (Trader trader in _traders.Values)
 	    {
-		    if (trader.Base.ItemsBuy is null || 
-		        trader.Base.ItemsBuyProhibited is null)
+		    if (trader.Base.ItemsBuy is null)
 			    continue;
 
-		    bool canBuyByCategory = trader.Base.ItemsBuy.Category.Any(x => itemBaseClasses.Contains(x));
-		    bool canBuyById = trader.Base.ItemsBuy.IdList.Contains(itemId);
-		    bool isProhibited = trader.Base.ItemsBuyProhibited.IdList.Contains(itemId);
-
-		    if ((!canBuyByCategory && !canBuyById) ||
-		        isProhibited) 
-			    continue;
-		    
-		    traderMulti = (100f - trader.Base.LoyaltyLevels?[0].BuyPriceCoefficient) / 100f;
-		    traderName = _locales[lang].GetValueOrDefault(trader.Base.Id + " Nickname", trader.Base.Id);
-		    
-		    return (traderMulti, traderName);
+		    bool accepts = trader.Base.ItemsBuy.Category.Any(itemBaseClasses.Contains)
+			                   || trader.Base.ItemsBuy.IdList.Contains(itemId);
+		    bool prohibited = trader.Base.ItemsBuyProhibited?.IdList.Contains(itemId) == true
+			                  || trader.Base.ItemsBuyProhibited?.Category.Any(itemBaseClasses.Contains) == true;
+		    double coefficient = (100f - trader.Base.LoyaltyLevels?[0].BuyPriceCoefficient) / 100f ?? 0;
+		    double currencyRoubleValue = trader.Base.Currency switch
+		    {
+			    CurrencyType.USD => _dollarRatio,
+			    CurrencyType.EUR => _euroRatio,
+			    CurrencyType.RUB => 1,
+			    _ => 0
+		    };
+		    double normalizedRoubles = handbookRoubleValue * coefficient;
+		    offers.Add(new TraderBuyOffer(
+			    trader.Base.Id,
+			    _locales[lang].GetValueOrDefault(trader.Base.Id + " Nickname", trader.Base.Id),
+			    trader.Base.Id == Traders.FENCE,
+			    accepts,
+			    prohibited,
+			    normalizedRoubles / currencyRoubleValue,
+			    currencyRoubleValue));
 	    }
 
-	    return (traderMulti, traderName);
+	    return TraderBuyValueCalculator.SelectHighest(offers);
     }
     
     public static List<ResolvedBarter> BarterResolver(string itemId)
