@@ -44,6 +44,18 @@ public class ModConfig
 	{
 		[JsonPropertyName("enabled")]
 		public bool Enabled { get; set; }
+		[JsonPropertyName("useTraderBuyPriceForRecolor")]
+		public bool UseTraderBuyPriceForRecolor { get; set; }
+		[JsonPropertyName("markFleaMarketBannedItemsAsOverpowered")]
+		public bool MarkFleaMarketBannedItemsAsOverpowered { get; set; }
+		[JsonPropertyName("usePenetrationForAmmoRecolor")]
+		public bool UsePenetrationForAmmoRecolor { get; set; } = true;
+		[JsonPropertyName("useArmorClassForRecolor")]
+		public bool UseArmorClassForRecolor { get; set; } = true;
+		[JsonPropertyName("useRigCapacityForRecolor")]
+		public bool UseRigCapacityForRecolor { get; set; } = true;
+		[JsonPropertyName("useBackpackCapacityForRecolor")]
+		public bool UseBackpackCapacityForRecolor { get; set; } = true;
 		[JsonPropertyName("addColorToName")]
 		public bool AddColorToName { get; set; }
 		[JsonPropertyName("addTierNameToPricesInfo")]
