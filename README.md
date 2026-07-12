@@ -6,6 +6,32 @@ English only (for now).
 # Features: 
 
 ## Rarity Recolor
+
+### Static background recoloring
+
+`RarityRecolor` supports two normal Background Recolor Basis choices. The default
+`useTraderBuyPriceForRecolor: false` preserves Trader Tier. Setting it to `true`
+uses the highest accepted, non-prohibited trader offer (excluding Fence), divided
+by the item's inventory footprint. Unsellable items have a value of zero.
+
+Specialized classifiers are enabled independently by default:
+
+- `usePenetrationForAmmoRecolor` uses ammunition penetration.
+- `useArmorClassForRecolor` uses armor class and treats armored rigs as armor.
+- `useRigCapacityForRecolor` uses direct-grid capacity for unarmored rigs.
+- `useBackpackCapacityForRecolor` uses direct-grid capacity for backpacks.
+
+`markFleaMarketBannedItemsAsOverpowered` is disabled by default. When enabled,
+the precedence is: Recolor Blacklist, Custom Rarity Override, Flea Ban Warning,
+specialized classifier, then the selected Background Recolor Basis. Missing
+specialized data emits an item-specific warning and falls back to the selected
+basis without stopping startup.
+
+The `TRADER_BUY_VALUE`, `AMMO_PENETRATION`, `RIG_CAPACITY`, and
+`BACKPACK_CAPACITY` arrays in `config/tiers.json` are validated separately.
+Each must contain the documented number of finite, strictly ascending values.
+Only an invalid section is replaced by built-in defaults; values are never
+silently reordered.
 This BETA feature clears and changes background color on EVERY item in the game based on MMO style rarity tier-list with colors that make actual sense. 
 Tiers are based on trader level you can purchase or barter the item. 
 Barters are considered +1 rarity level. 

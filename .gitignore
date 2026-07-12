@@ -1,0 +1,5 @@
+bin/
+obj/
+ItemInfo.Tests/bin/
+ItemInfo.Tests/obj/
+*.user
