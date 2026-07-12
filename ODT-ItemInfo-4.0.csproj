@@ -10,9 +10,11 @@
         <!-- The two lines below will set the output path for the binaries -->
         <OutputPath>bin\$(Configuration)\$(ProjectName)\$(AssemblyName)\</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <DefaultItemExcludes>$(DefaultItemExcludes);ItemInfo.Tests\**</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Remove="ItemInfo.Tests\**\*.cs" />
         <PackageReference Include="SPTarkov.Common" Version="4.0.9" />
         <PackageReference Include="SPTarkov.DI" Version="4.0.9" />
         <PackageReference Include="SPTarkov.Server.Core" Version="4.0.9" />
@@ -69,7 +71,7 @@
     </Target>
 
     <!-- Copy output to staging directory -->
-    <Target Name="StagingForge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Target Name="StagingForge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and '$(EnableForgeStaging)' == 'true'">
 
         <!-- Build the full staging path -->
         <PropertyGroup>
