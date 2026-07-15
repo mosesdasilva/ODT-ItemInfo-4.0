@@ -33,6 +33,7 @@ public class RecolorConfigurationTests
               "basis":"TraderBuyValue",
               "display":{"addColorToName":false,"addContextualLabelToPricesInfo":true},
               "tiers":{"colors":["default","green","blue","violet","orange","#F00"],"traderBuyValuePerSlotCutoffs":[1,2,3,4,5]},
+              "specializedClassifiers":{"ammunition":{"enabled":true,"penetrationCutoffs":[20,30,40,50,60]}},
               "customOverrides":{"itemIdToTier":{"fixture":4}},
               "blacklist":{"itemOrParentIds":["blocked"]}
             }}
@@ -125,6 +126,7 @@ public class RecolorConfigurationTests
         "\"enabled\":true,\"basis\":\"TraderBuyValue\"," +
         "\"display\":{\"addColorToName\":false,\"addContextualLabelToPricesInfo\":true}," +
         "\"tiers\":{\"colors\":" + colors + ",\"traderBuyValuePerSlotCutoffs\":" + cutoffs + "}," +
+        "\"specializedClassifiers\":{\"ammunition\":{\"enabled\":true,\"penetrationCutoffs\":[20,30,40,50,60]}}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";
 
     private static string FindRepositoryFile(params string[] parts)

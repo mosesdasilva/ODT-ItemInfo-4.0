@@ -18,7 +18,7 @@ public sealed record RecolorThresholds(
 {
     public static RecolorThresholds Defaults { get; } = new(
         [10000, 15000, 20000, 40000, 60000],
-        [10, 20, 30, 40, 50, 60],
+        [20, 30, 40, 50, 60],
         [8, 12, 16, 20, 24],
         [12, 20, 25, 30, 40]);
 }

@@ -291,16 +291,7 @@ public class ItemInfo(
 	    StringBuilder tiersHexCode = new StringBuilder();
 	    StringBuilder addToName = new StringBuilder();
 	    StringBuilder addToShortName = new StringBuilder();
-	    var recolorSettings = new RecolorSettings
-	    {
-		    UseTraderBuyPriceForRecolor = Config.ModRarityRecolor.UseTraderBuyPriceForRecolor,
-		    MarkFleaMarketBannedItemsAsOverpowered = false,
-		    UsePenetrationForAmmoRecolor = false,
-		    UseArmorClassForRecolor = false,
-		    UseRigCapacityForRecolor = false,
-		    UseBackpackCapacityForRecolor = false
-	    };
-	    var staticRecolorPass = new StaticRecolorPass(recolorSettings, RecolorThresholds, Config.ModRarityRecolor.TierColors);
+	    var staticRecolorPass = new StaticRecolorPass(Config.ModRarityRecolor);
 	    
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
@@ -803,7 +794,7 @@ public class ItemInfo(
 					    : isBackpack ? RecolorItemKind.Backpack
 					    : RecolorItemKind.Normal;
 				    var grids = itemProperties.Grids?.Where(grid => grid.Properties is not null)
-					    .Select(grid => (grid.Properties!.CellsH ?? 0, grid.Properties.CellsV ?? 0)).ToList();
+				    .Select(grid => (grid.Properties!.CellsH ?? 0, grid.Properties.CellsV ?? 0)).ToList();
 				    Config.ModRarityRecolor.CustomOverrides.TryGetValue(itemId.ToString(), out int customRarity);
 				    int? defaultFrontPlateClass = null;
 				    if (kind is RecolorItemKind.Armor or RecolorItemKind.ArmoredRig)
@@ -814,11 +805,32 @@ public class ItemInfo(
 					    if (frontPlate is not null && Items.TryGetValue(frontPlate.Template, out var frontPlateTemplate))
 						    defaultFrontPlateClass = frontPlateTemplate.Properties?.ArmorClass;
 				    }
+				    var recolorItem = isAmmo
+					    ? RecolorItemAdapter.FromAmmunition(new(
+						    itemId.ToString(),
+						    templateItem.Parent.ToString(),
+						    traderTierRarity,
+						    isBanned,
+						    traderPrice,
+						    itemProperties.Width,
+						    itemProperties.Height,
+						    itemProperties.PenetrationPower))
+					    : new RecolorItem(
+						    itemId,
+						    templateItem.Parent,
+						    kind,
+						    traderTierRarity,
+						    isBanned,
+						    traderPrice,
+						    itemProperties.Width,
+						    itemProperties.Height,
+						    ArmorClass: itemProperties.ArmorClass,
+						    SoftArmorClass: itemProperties.ArmorClass,
+						    DefaultFrontPlateClass: defaultFrontPlateClass,
+						    DirectGrids: grids);
 				    staticRecolorPass.Apply(
 					    new StaticRecolorRequest(
-						    new RecolorItem(itemId, templateItem.Parent, kind, traderTierRarity, isBanned, traderPrice,
-							    itemProperties.Width, itemProperties.Height, itemProperties.PenetrationPower,
-							    itemProperties.ArmorClass, itemProperties.ArmorClass, defaultFrontPlateClass, grids),
+						    recolorItem,
 						    tier => itemRarity = (int)tier,
 						    Custom: customRarity > 0 ? (RecolorTier?)customRarity : null,
 						    ApplyPresentation: presentation =>

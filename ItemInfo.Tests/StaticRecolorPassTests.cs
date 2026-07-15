@@ -31,13 +31,12 @@ public class StaticRecolorPassTests
     }
 
     [Theory]
-    [InlineData(0, RecolorTier.Common)] [InlineData(10, RecolorTier.Common)]
-    [InlineData(11, RecolorTier.Rare)] [InlineData(20, RecolorTier.Rare)]
-    [InlineData(21, RecolorTier.Epic)] [InlineData(30, RecolorTier.Epic)]
-    [InlineData(31, RecolorTier.Legendary)] [InlineData(40, RecolorTier.Legendary)]
-    [InlineData(41, RecolorTier.Uber)] [InlineData(50, RecolorTier.Uber)]
-    [InlineData(51, RecolorTier.Unobtainium)] [InlineData(60, RecolorTier.Unobtainium)]
-    [InlineData(61, RecolorTier.Overpowered)]
+    [InlineData(0, RecolorTier.Common)] [InlineData(19, RecolorTier.Common)]
+    [InlineData(20, RecolorTier.Rare)] [InlineData(29, RecolorTier.Rare)]
+    [InlineData(30, RecolorTier.Epic)] [InlineData(39, RecolorTier.Epic)]
+    [InlineData(40, RecolorTier.Legendary)] [InlineData(49, RecolorTier.Legendary)]
+    [InlineData(50, RecolorTier.Uber)] [InlineData(59, RecolorTier.Uber)]
+    [InlineData(60, RecolorTier.Unobtainium)] [InlineData(120, RecolorTier.Unobtainium)]
     public void Ammunition_uses_penetration(double penetration, RecolorTier expected)
     {
         var pass = new StaticRecolorPass(new(), RecolorThresholds.Defaults);

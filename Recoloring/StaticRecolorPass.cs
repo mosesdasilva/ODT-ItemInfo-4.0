@@ -16,6 +16,25 @@ public sealed class StaticRecolorPass
         this.tierColors = tierColors;
     }
 
+    public StaticRecolorPass(RecolorConfiguration configuration)
+        : this(
+            new()
+            {
+                UseTraderBuyPriceForRecolor = configuration.UseTraderBuyPriceForRecolor,
+                UsePenetrationForAmmoRecolor = configuration.SpecializedClassifiers.Ammunition.Enabled,
+                UseArmorClassForRecolor = false,
+                UseRigCapacityForRecolor = false,
+                UseBackpackCapacityForRecolor = false
+            },
+            new(
+                configuration.TraderBuyValuePerSlotCutoffs,
+                configuration.SpecializedClassifiers.Ammunition.PenetrationCutoffs,
+                RecolorThresholds.Defaults.RigCapacity,
+                RecolorThresholds.Defaults.BackpackCapacity),
+            configuration.TierColors)
+    {
+    }
+
     public IReadOnlyList<RecolorResult> Run(IEnumerable<StaticRecolorRequest> requests, Action<string> warn)
     {
         var results = new List<RecolorResult>();
@@ -33,9 +52,12 @@ public sealed class StaticRecolorPass
 		    if (request.ApplyPresentation is not null && tierColors is not null && result.Tier.Value is >= RecolorTier.Common and <= RecolorTier.Unobtainium)
 		    {
 			    var tierNumber = (int)result.Tier.Value;
-			    var valueBased = settings.UseTraderBuyPriceForRecolor;
-			    var label = valueBased ? "Value Tier" : "Trader Tier";
-			    var translationKey = valueBased ? "RecolorValueTier" : "RecolorTraderTier";
+			    var (label, translationKey) = result.ContextualLabelKind switch
+			    {
+				    RecolorContextualLabelKind.PenetrationTier => ("Penetration Tier", "RecolorPenetrationTier"),
+				    _ when settings.UseTraderBuyPriceForRecolor => ("Value Tier", "RecolorValueTier"),
+				    _ => ("Trader Tier", "RecolorTraderTier")
+			    };
 			    request.ApplyPresentation(new(tierColors[tierNumber - 1], $"{label} {tierNumber}", translationKey, tierNumber));
 		    }
 	    }
@@ -58,7 +80,10 @@ public sealed class StaticRecolorPass
     private RecolorResult? ClassifySpecialized(RecolorItem item) => item.Kind switch
     {
         RecolorItemKind.Ammo when settings.UsePenetrationForAmmoRecolor =>
-            item.Penetration is >= 0 ? new(true, TierByUpperBounds(item.Penetration.Value, thresholds.AmmoPenetration, true)) : Fallback(item, "ammunition penetration"),
+            item.Penetration is >= 0 && double.IsFinite(item.Penetration.Value)
+                ? new(true, TierByLowerBounds(item.Penetration.Value, thresholds.AmmoPenetration),
+                    ContextualLabelKind: RecolorContextualLabelKind.PenetrationTier)
+                : Fallback(item, "ammunition penetration"),
         RecolorItemKind.Armor or RecolorItemKind.ArmoredRig when settings.UseArmorClassForRecolor => ClassifyArmor(item),
         RecolorItemKind.Rig when settings.UseRigCapacityForRecolor => ClassifyCapacity(item, thresholds.RigCapacity, "rig capacity"),
         RecolorItemKind.Backpack when settings.UseBackpackCapacityForRecolor => ClassifyCapacity(item, thresholds.BackpackCapacity, "backpack capacity"),

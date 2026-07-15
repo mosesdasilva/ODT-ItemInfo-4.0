@@ -110,6 +110,7 @@ public class StaticRecolorPassIntegrationTests
         {
             Assert.True(language.Value.TryGetProperty("RecolorTraderTier", out _), $"{language.Name} is missing RecolorTraderTier");
             Assert.True(language.Value.TryGetProperty("RecolorValueTier", out _), $"{language.Name} is missing RecolorValueTier");
+            Assert.True(language.Value.TryGetProperty("RecolorPenetrationTier", out _), $"{language.Name} is missing RecolorPenetrationTier");
         }
     }
 

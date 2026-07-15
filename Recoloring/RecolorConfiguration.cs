@@ -6,12 +6,17 @@ public enum BackgroundRecolorBasis { TraderTier, TraderBuyValue }
 
 public sealed record RecolorDisplay(bool AddColorToName, bool AddContextualLabelToPricesInfo);
 
+public sealed record AmmunitionClassifierConfiguration(bool Enabled, double[] PenetrationCutoffs);
+
+public sealed record SpecializedClassifierConfiguration(AmmunitionClassifierConfiguration Ammunition);
+
 public sealed record RecolorConfiguration(
     bool Enabled,
     BackgroundRecolorBasis Basis,
     RecolorDisplay Display,
     IReadOnlyList<ColorSpecification> TierColors,
     double[] TraderBuyValuePerSlotCutoffs,
+    SpecializedClassifierConfiguration SpecializedClassifiers,
     IReadOnlyDictionary<string, int> CustomOverrides,
     IReadOnlyList<string> Blacklist)
 {
@@ -35,6 +40,8 @@ public sealed record RecolorConfiguration(
         new(true, true),
         DefaultColorValues.Select(ColorSpecification.ParseDefault).ToArray(),
         [.. DefaultCutoffs],
+        new(
+            new(true, [20, 30, 40, 50, 60])),
         new Dictionary<string, int>(),
         []);
 
@@ -72,9 +79,10 @@ public sealed record RecolorConfiguration(
             var basis = ReadBasis(root, warn);
             var display = ReadDisplay(root, warn);
             var (colors, cutoffs) = ReadTiers(root, warn);
+            var specializedClassifiers = ReadSpecializedClassifiers(root, warn);
             var overrides = ReadOverrides(root, warn);
             var blacklist = ReadBlacklist(root, warn);
-            return new(enabled, basis, display, colors, cutoffs, overrides, blacklist);
+            return new(enabled, basis, display, colors, cutoffs, specializedClassifiers, overrides, blacklist);
         }
         catch (JsonException)
         {
@@ -142,6 +150,42 @@ public sealed record RecolorConfiguration(
             index++;
         }
         return result;
+    }
+
+    private static SpecializedClassifierConfiguration ReadSpecializedClassifiers(JsonElement root, Action<string> warn)
+    {
+        if (!root.TryGetProperty("specializedClassifiers", out var section) || section.ValueKind != JsonValueKind.Object)
+        {
+            warn("[ItemInfo] Invalid RarityRecolor.specializedClassifiers section; using built-in specialized classifier defaults.");
+            return Defaults.SpecializedClassifiers;
+        }
+
+        return new(ReadAmmunitionClassifier(section, warn));
+    }
+
+    private static AmmunitionClassifierConfiguration ReadAmmunitionClassifier(
+        JsonElement specializedClassifiers,
+        Action<string> warn)
+    {
+        const string path = "RarityRecolor.specializedClassifiers.ammunition";
+        var defaults = Defaults.SpecializedClassifiers.Ammunition;
+        if (!specializedClassifiers.TryGetProperty("ammunition", out var section) || section.ValueKind != JsonValueKind.Object)
+        {
+            warn($"[ItemInfo] Invalid {path} section; using built-in defaults for this classifier.");
+            return defaults;
+        }
+
+        var enabled = ReadBoolean(section, "enabled", defaults.Enabled, warn, $"{path}.enabled");
+        var cutoffs = section.TryGetProperty("penetrationCutoffs", out var cutoffElement)
+            ? ThresholdConfiguration.ReadAscending(cutoffElement, 5, defaults.PenetrationCutoffs, $"{path}.penetrationCutoffs", warn)
+            : MissingPenetrationCutoffs(defaults, warn);
+        return new(enabled, cutoffs);
+    }
+
+    private static double[] MissingPenetrationCutoffs(AmmunitionClassifierConfiguration defaults, Action<string> warn)
+    {
+        warn("[ItemInfo] Invalid or missing RarityRecolor.specializedClassifiers.ammunition.penetrationCutoffs; using built-in defaults for this classifier.");
+        return [.. defaults.PenetrationCutoffs];
     }
 
     private static double[] InvalidCutoffs(Action<string> warn)

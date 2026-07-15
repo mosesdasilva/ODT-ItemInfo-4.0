@@ -1,0 +1,24 @@
+{
+  "boundaryCases": [
+    { "template": { "id": "pen-0", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 0 }, "expectedTier": 1 },
+    { "template": { "id": "pen-below-20", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 19.999 }, "expectedTier": 1 },
+    { "template": { "id": "pen-20", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 20 }, "expectedTier": 2 },
+    { "template": { "id": "pen-below-30", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 29.999 }, "expectedTier": 2 },
+    { "template": { "id": "pen-30", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 30 }, "expectedTier": 3 },
+    { "template": { "id": "pen-below-40", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 39.999 }, "expectedTier": 3 },
+    { "template": { "id": "pen-40", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 40 }, "expectedTier": 4 },
+    { "template": { "id": "pen-below-50", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 49.999 }, "expectedTier": 4 },
+    { "template": { "id": "pen-50", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 50 }, "expectedTier": 5 },
+    { "template": { "id": "pen-below-60", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 59.999 }, "expectedTier": 5 },
+    { "template": { "id": "pen-60", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 60 }, "expectedTier": 6 },
+    { "template": { "id": "pen-overflow", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 120 }, "expectedTier": 6 }
+  ],
+  "malformedCases": [
+    { "template": { "id": "pen-missing", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": null }, "expectedTier": 2 },
+    { "template": { "id": "pen-negative", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": -1 }, "expectedTier": 2 }
+  ],
+  "disabledCase": {
+    "template": { "id": "pen-disabled", "parentId": "ammo-parent", "traderTier": 2, "fleaBanned": false, "bestTraderBuyValue": 40000, "width": 1, "height": 1, "penetrationPower": 60 },
+    "expectedTier": 2
+  }
+}
