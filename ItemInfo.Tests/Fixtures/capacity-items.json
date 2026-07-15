@@ -1,0 +1,41 @@
+{
+  "multiGridRig": {
+    "id": "fixture-multi-grid-rig",
+    "kind": "Rig",
+    "traderTier": 2,
+    "grids": [
+      {
+        "cellsH": 2,
+        "cellsV": 4,
+        "filters": ["ammo"],
+        "shape": [[1, 1], [1, 0], [1, 1], [1, 1]]
+      },
+      {
+        "cellsH": 2,
+        "cellsV": 4,
+        "filters": ["medical"],
+        "shape": [[1, 0], [1, 1], [0, 1], [1, 1]]
+      }
+    ]
+  },
+  "armoredRig": {
+    "id": "fixture-armored-rig",
+    "kind": "Rig",
+    "traderTier": 2,
+    "hasDefaultArmorData": true,
+    "grids": [{ "cellsH": 100, "cellsV": 1 }]
+  },
+  "boundaries": [
+    { "kind": "Rig", "capacities": [8, 12, 16, 20, 24] },
+    { "kind": "Backpack", "capacities": [12, 20, 25, 30, 40] }
+  ],
+  "invalidItems": [
+    { "id": "fixture-missing-grids", "kind": "Backpack", "traderTier": 2 },
+    {
+      "id": "fixture-invalid-grid",
+      "kind": "Rig",
+      "traderTier": 2,
+      "grids": [{ "cellsH": 2, "cellsV": 4 }, {}]
+    }
+  ]
+}

@@ -26,6 +26,14 @@
 			"ammunition": {
 				"enabled": true,
 				"penetrationCutoffs": [20, 30, 40, 50, 60]
+			},
+			"unarmoredRigs": {
+				"enabled": true,
+				"capacityCutoffs": [8, 12, 16, 20, 24]
+			},
+			"backpacks": {
+				"enabled": true,
+				"capacityCutoffs": [12, 20, 25, 30, 40]
 			}
 		},
 		"customOverrides": {

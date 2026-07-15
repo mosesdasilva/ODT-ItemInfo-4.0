@@ -8,7 +8,12 @@ public sealed record RecolorDisplay(bool AddColorToName, bool AddContextualLabel
 
 public sealed record AmmunitionClassifierConfiguration(bool Enabled, double[] PenetrationCutoffs);
 
-public sealed record SpecializedClassifierConfiguration(AmmunitionClassifierConfiguration Ammunition);
+public sealed record CapacityClassifierConfiguration(bool Enabled, double[] CapacityCutoffs);
+
+public sealed record SpecializedClassifierConfiguration(
+    AmmunitionClassifierConfiguration Ammunition,
+    CapacityClassifierConfiguration UnarmoredRigs,
+    CapacityClassifierConfiguration Backpacks);
 
 public sealed record RecolorConfiguration(
     bool Enabled,
@@ -41,7 +46,9 @@ public sealed record RecolorConfiguration(
         DefaultColorValues.Select(ColorSpecification.ParseDefault).ToArray(),
         [.. DefaultCutoffs],
         new(
-            new(true, [20, 30, 40, 50, 60])),
+            new(true, [20, 30, 40, 50, 60]),
+            new(true, [8, 12, 16, 20, 24]),
+            new(true, [12, 20, 25, 30, 40])),
         new Dictionary<string, int>(),
         []);
 
@@ -160,7 +167,10 @@ public sealed record RecolorConfiguration(
             return Defaults.SpecializedClassifiers;
         }
 
-        return new(ReadAmmunitionClassifier(section, warn));
+        return new(
+            ReadAmmunitionClassifier(section, warn),
+            ReadCapacityClassifier(section, "unarmoredRigs", Defaults.SpecializedClassifiers.UnarmoredRigs, warn),
+            ReadCapacityClassifier(section, "backpacks", Defaults.SpecializedClassifiers.Backpacks, warn));
     }
 
     private static AmmunitionClassifierConfiguration ReadAmmunitionClassifier(
@@ -186,6 +196,32 @@ public sealed record RecolorConfiguration(
     {
         warn("[ItemInfo] Invalid or missing RarityRecolor.specializedClassifiers.ammunition.penetrationCutoffs; using built-in defaults for this classifier.");
         return [.. defaults.PenetrationCutoffs];
+    }
+
+    private static CapacityClassifierConfiguration ReadCapacityClassifier(
+        JsonElement specializedClassifiers,
+        string propertyName,
+        CapacityClassifierConfiguration defaults,
+        Action<string> warn)
+    {
+        var path = $"RarityRecolor.specializedClassifiers.{propertyName}";
+        if (!specializedClassifiers.TryGetProperty(propertyName, out var section) || section.ValueKind != JsonValueKind.Object)
+        {
+            warn($"[ItemInfo] Invalid {path} section; using built-in defaults for this classifier.");
+            return defaults;
+        }
+
+        var enabled = ReadBoolean(section, "enabled", defaults.Enabled, warn, $"{path}.enabled");
+        var cutoffs = section.TryGetProperty("capacityCutoffs", out var cutoffElement)
+            ? ThresholdConfiguration.ReadAscending(cutoffElement, 5, defaults.CapacityCutoffs, $"{path}.capacityCutoffs", warn)
+            : MissingCapacityCutoffs(defaults, path, warn);
+        return new(enabled, cutoffs);
+    }
+
+    private static double[] MissingCapacityCutoffs(CapacityClassifierConfiguration defaults, string path, Action<string> warn)
+    {
+        warn($"[ItemInfo] Invalid or missing {path}.capacityCutoffs; using built-in defaults for this classifier.");
+        return [.. defaults.CapacityCutoffs];
     }
 
     private static double[] InvalidCutoffs(Action<string> warn)

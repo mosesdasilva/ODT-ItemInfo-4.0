@@ -23,14 +23,14 @@ public sealed class StaticRecolorPass
                 UseTraderBuyPriceForRecolor = configuration.UseTraderBuyPriceForRecolor,
                 UsePenetrationForAmmoRecolor = configuration.SpecializedClassifiers.Ammunition.Enabled,
                 UseArmorClassForRecolor = false,
-                UseRigCapacityForRecolor = false,
-                UseBackpackCapacityForRecolor = false
+                UseRigCapacityForRecolor = configuration.SpecializedClassifiers.UnarmoredRigs.Enabled,
+                UseBackpackCapacityForRecolor = configuration.SpecializedClassifiers.Backpacks.Enabled
             },
             new(
                 configuration.TraderBuyValuePerSlotCutoffs,
                 configuration.SpecializedClassifiers.Ammunition.PenetrationCutoffs,
-                RecolorThresholds.Defaults.RigCapacity,
-                RecolorThresholds.Defaults.BackpackCapacity),
+                configuration.SpecializedClassifiers.UnarmoredRigs.CapacityCutoffs,
+                configuration.SpecializedClassifiers.Backpacks.CapacityCutoffs),
             configuration.TierColors)
     {
     }
@@ -55,6 +55,7 @@ public sealed class StaticRecolorPass
 			    var (label, translationKey) = result.ContextualLabelKind switch
 			    {
 				    RecolorContextualLabelKind.PenetrationTier => ("Penetration Tier", "RecolorPenetrationTier"),
+				    RecolorContextualLabelKind.CapacityTier => ("Capacity Tier", "RecolorCapacityTier"),
 				    _ when settings.UseTraderBuyPriceForRecolor => ("Value Tier", "RecolorValueTier"),
 				    _ => ("Trader Tier", "RecolorTraderTier")
 			    };
@@ -103,7 +104,8 @@ public sealed class StaticRecolorPass
         if (item.DirectGrids is null || item.DirectGrids.Count == 0 || item.DirectGrids.Any(g => g.Width <= 0 || g.Height <= 0))
             return Fallback(item, field);
         var capacity = item.DirectGrids.Sum(g => g.Width * g.Height);
-        return new(true, TierByUpperBounds(capacity, bounds));
+        return new(true, TierByUpperBounds(capacity, bounds),
+            ContextualLabelKind: RecolorContextualLabelKind.CapacityTier);
     }
 
     private RecolorResult ClassifyNormal(RecolorItem item)

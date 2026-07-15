@@ -33,7 +33,11 @@ public class RecolorConfigurationTests
               "basis":"TraderBuyValue",
               "display":{"addColorToName":false,"addContextualLabelToPricesInfo":true},
               "tiers":{"colors":["default","green","blue","violet","orange","#F00"],"traderBuyValuePerSlotCutoffs":[1,2,3,4,5]},
-              "specializedClassifiers":{"ammunition":{"enabled":true,"penetrationCutoffs":[20,30,40,50,60]}},
+              "specializedClassifiers":{
+                "ammunition":{"enabled":true,"penetrationCutoffs":[20,30,40,50,60]},
+                "unarmoredRigs":{"enabled":true,"capacityCutoffs":[8,12,16,20,24]},
+                "backpacks":{"enabled":true,"capacityCutoffs":[12,20,25,30,40]}
+              },
               "customOverrides":{"itemIdToTier":{"fixture":4}},
               "blacklist":{"itemOrParentIds":["blocked"]}
             }}
@@ -47,6 +51,56 @@ public class RecolorConfigurationTests
         Assert.Equal("#FF0000", configuration.TierColors[5].BackgroundValue);
         Assert.Equal([1d, 2, 3, 4, 5], configuration.TraderBuyValuePerSlotCutoffs);
         Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Capacity_classifiers_load_independent_toggles_and_cutoffs()
+    {
+        var warnings = new List<string>();
+        var configuration = RecolorConfiguration.Load(
+            """
+            {"RarityRecolor":{
+              "enabled":true,
+              "basis":"TraderTier",
+              "display":{"addColorToName":true,"addContextualLabelToPricesInfo":true},
+              "tiers":{"colors":["default","green","blue","violet","orange","red"],"traderBuyValuePerSlotCutoffs":[10000,15000,20000,40000,60000]},
+              "specializedClassifiers":{
+                "ammunition":{"enabled":true,"penetrationCutoffs":[20,30,40,50,60]},
+                "unarmoredRigs":{"enabled":false,"capacityCutoffs":[7,11,15,19,23]},
+                "backpacks":{"enabled":true,"capacityCutoffs":[13,21,26,31,41]}
+              },
+              "customOverrides":{"itemIdToTier":{}},
+              "blacklist":{"itemOrParentIds":[]}
+            }}
+            """,
+            [],
+            warnings.Add);
+
+        Assert.False(configuration.SpecializedClassifiers.UnarmoredRigs.Enabled);
+        Assert.Equal([7d, 11, 15, 19, 23], configuration.SpecializedClassifiers.UnarmoredRigs.CapacityCutoffs);
+        Assert.True(configuration.SpecializedClassifiers.Backpacks.Enabled);
+        Assert.Equal([13d, 21, 26, 31, 41], configuration.SpecializedClassifiers.Backpacks.CapacityCutoffs);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Invalid_rig_cutoffs_fall_back_without_replacing_valid_backpack_settings()
+    {
+        var warnings = new List<string>();
+        var json = ValidJson().Replace(
+            "\"unarmoredRigs\":{\"enabled\":true,\"capacityCutoffs\":[8,12,16,20,24]}",
+            "\"unarmoredRigs\":{\"enabled\":false,\"capacityCutoffs\":[8,12,12,20,24]}")
+            .Replace(
+                "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]}",
+                "\"backpacks\":{\"enabled\":false,\"capacityCutoffs\":[13,21,26,31,41]}");
+
+        var configuration = RecolorConfiguration.Load(json, [], warnings.Add);
+
+        Assert.False(configuration.SpecializedClassifiers.UnarmoredRigs.Enabled);
+        Assert.Equal([8d, 12, 16, 20, 24], configuration.SpecializedClassifiers.UnarmoredRigs.CapacityCutoffs);
+        Assert.False(configuration.SpecializedClassifiers.Backpacks.Enabled);
+        Assert.Equal([13d, 21, 26, 31, 41], configuration.SpecializedClassifiers.Backpacks.CapacityCutoffs);
+        Assert.Single(warnings, warning => warning.Contains("unarmoredRigs.capacityCutoffs"));
     }
 
     [Fact]
@@ -126,7 +180,10 @@ public class RecolorConfigurationTests
         "\"enabled\":true,\"basis\":\"TraderBuyValue\"," +
         "\"display\":{\"addColorToName\":false,\"addContextualLabelToPricesInfo\":true}," +
         "\"tiers\":{\"colors\":" + colors + ",\"traderBuyValuePerSlotCutoffs\":" + cutoffs + "}," +
-        "\"specializedClassifiers\":{\"ammunition\":{\"enabled\":true,\"penetrationCutoffs\":[20,30,40,50,60]}}," +
+        "\"specializedClassifiers\":{" +
+        "\"ammunition\":{\"enabled\":true,\"penetrationCutoffs\":[20,30,40,50,60]}," +
+        "\"unarmoredRigs\":{\"enabled\":true,\"capacityCutoffs\":[8,12,16,20,24]}," +
+        "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]}}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";
 
     private static string FindRepositoryFile(params string[] parts)

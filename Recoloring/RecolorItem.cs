@@ -27,6 +27,20 @@ public sealed record AmmunitionRecolorTemplate(
     int? Height,
     double? PenetrationPower);
 
+public sealed record ContainerGridTemplate(int? CellsH, int? CellsV);
+
+public sealed record ContainerRecolorTemplate(
+    string Id,
+    string ParentId,
+    RecolorItemKind Kind,
+    int TraderTier,
+    bool FleaBanned,
+    double? BestTraderBuyValue,
+    int? Width,
+    int? Height,
+    IReadOnlyList<ContainerGridTemplate>? DirectGrids,
+    bool HasDefaultArmorData = false);
+
 public static class RecolorItemAdapter
 {
     public static RecolorItem FromAmmunition(AmmunitionRecolorTemplate template) =>
@@ -41,9 +55,24 @@ public static class RecolorItemAdapter
             template.Height,
             template.PenetrationPower);
 
+    public static RecolorItem FromContainer(ContainerRecolorTemplate template) =>
+        new(
+            template.Id,
+            template.ParentId,
+            template.Kind == RecolorItemKind.Rig && template.HasDefaultArmorData
+                ? RecolorItemKind.ArmoredRig
+                : template.Kind,
+            template.TraderTier,
+            template.FleaBanned,
+            template.BestTraderBuyValue,
+            template.Width,
+            template.Height,
+            DirectGrids: template.DirectGrids?
+                .Select(grid => (grid.CellsH ?? 0, grid.CellsV ?? 0))
+                .ToArray());
 }
 
-public enum RecolorContextualLabelKind { BackgroundBasis, PenetrationTier }
+public enum RecolorContextualLabelKind { BackgroundBasis, PenetrationTier, CapacityTier }
 
 public sealed record RecolorResult(
     bool Recolored,

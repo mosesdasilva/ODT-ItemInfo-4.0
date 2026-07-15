@@ -787,19 +787,25 @@ public class ItemInfo(
 				    bool isArmor = itemHelper.IsOfBaseclass(itemId, BaseClasses.ARMOR);
 				    bool isRig = itemHelper.IsOfBaseclass(itemId, BaseClasses.VEST);
 				    bool isBackpack = itemHelper.IsOfBaseclass(itemId, BaseClasses.BACKPACK);
+				    var defaultPreset = isArmor || isRig ? presetHelper.GetDefaultPreset(itemId) : null;
+				    var hasDefaultArmorData = isRig && defaultPreset?.Items.Any(item =>
+					    Items.TryGetValue(item.Template, out var armorTemplate) &&
+					    armorTemplate.Properties?.ArmorClass is >= 1 and <= 6) == true;
 				    var kind = isAmmo ? RecolorItemKind.Ammo
-					    : isArmor && isRig ? RecolorItemKind.ArmoredRig
 					    : isArmor ? RecolorItemKind.Armor
 					    : isRig ? RecolorItemKind.Rig
 					    : isBackpack ? RecolorItemKind.Backpack
 					    : RecolorItemKind.Normal;
-				    var grids = itemProperties.Grids?.Where(grid => grid.Properties is not null)
-				    .Select(grid => (grid.Properties!.CellsH ?? 0, grid.Properties.CellsV ?? 0)).ToList();
+				    var containerGrids = itemProperties.Grids?
+					    .Select(grid => new ContainerGridTemplate(grid.Properties?.CellsH, grid.Properties?.CellsV))
+					    .ToList();
+				    var grids = containerGrids?
+					    .Select(grid => (grid.CellsH ?? 0, grid.CellsV ?? 0))
+					    .ToList();
 				    Config.ModRarityRecolor.CustomOverrides.TryGetValue(itemId.ToString(), out int customRarity);
 				    int? defaultFrontPlateClass = null;
 				    if (kind is RecolorItemKind.Armor or RecolorItemKind.ArmoredRig)
 				    {
-					    var defaultPreset = presetHelper.GetDefaultPreset(itemId);
 					    var frontPlate = defaultPreset?.Items.FirstOrDefault(item =>
 						    item.SlotId is "mod_slot_plate_front" or "front_plate");
 					    if (frontPlate is not null && Items.TryGetValue(frontPlate.Template, out var frontPlateTemplate))
@@ -815,6 +821,18 @@ public class ItemInfo(
 						    itemProperties.Width,
 						    itemProperties.Height,
 						    itemProperties.PenetrationPower))
+					    : kind is RecolorItemKind.Rig or RecolorItemKind.Backpack
+						    ? RecolorItemAdapter.FromContainer(new(
+							    itemId.ToString(),
+							    templateItem.Parent.ToString(),
+							    kind,
+							    traderTierRarity,
+							    isBanned,
+							    traderPrice,
+							    itemProperties.Width,
+							    itemProperties.Height,
+							    containerGrids,
+							    hasDefaultArmorData))
 					    : new RecolorItem(
 						    itemId,
 						    templateItem.Parent,
