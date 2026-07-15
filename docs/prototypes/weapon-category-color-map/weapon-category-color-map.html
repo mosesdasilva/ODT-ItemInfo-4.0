@@ -1,0 +1,126 @@
+<div id="weapon-category-color-map">
+  <div class="viz-controls" role="group" aria-label="Palette candidate">
+    <button type="button" class="btn btn-primary" data-variant="A" aria-pressed="true">A - Shared progression</button>
+    <button type="button" class="btn" data-variant="B" aria-pressed="false">B - Role grouping</button>
+    <button type="button" class="btn" data-variant="C" aria-pressed="false">C - Category identity</button>
+  </div>
+  <div class="palette-summary text-small" aria-live="polite"></div>
+  <div class="palette-grid" role="list" aria-label="Weapon categories from lighter to heavier"></div>
+  <div class="palette-context text-small">
+    <span><strong>Flare / signal weapon</strong> - Tier 1, no warning (8 templates)</span>
+    <span><span class="context-swatch warning-swatch" aria-hidden="true"></span><strong>Flea Restricted</strong> - <code>tracerRed</code>, independent warning</span>
+  </div>
+</div>
+
+<style>
+  #weapon-category-color-map { display: grid; gap: 16px; }
+  #weapon-category-color-map .palette-summary { color: var(--muted-foreground); }
+  #weapon-category-color-map .palette-grid { display: grid; gap: 8px; }
+  #weapon-category-color-map .palette-row {
+    display: grid;
+    grid-template-columns: minmax(132px, 1.4fr) minmax(120px, 1fr) 80px 52px;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+  }
+  #weapon-category-color-map .palette-label,
+  #weapon-category-color-map .palette-key { min-width: 0; overflow-wrap: anywhere; }
+  #weapon-category-color-map .palette-key,
+  #weapon-category-color-map .palette-count { color: var(--muted-foreground); }
+  #weapon-category-color-map .swatch-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  #weapon-category-color-map .swatch,
+  #weapon-category-color-map .context-swatch {
+    display: inline-block;
+    width: 30px;
+    height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    flex: 0 0 auto;
+  }
+  #weapon-category-color-map .swatch-name { overflow-wrap: anywhere; }
+  #weapon-category-color-map .palette-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    color: var(--muted-foreground);
+  }
+  #weapon-category-color-map .palette-context span { display: inline-flex; align-items: center; gap: 7px; }
+  #weapon-category-color-map .warning-swatch { background: #FF3C3C; }
+  @media (max-width: 560px) {
+    #weapon-category-color-map .palette-row {
+      grid-template-columns: minmax(124px, 1fr) minmax(96px, 1fr) 42px;
+    }
+    #weapon-category-color-map .palette-key { display: none; }
+  }
+</style>
+
+<script>
+(() => {
+  const root = document.getElementById('weapon-category-color-map');
+  const categories = [
+    ['pistol', 'Pistol', 26],
+    ['revolver', 'Revolver', 3],
+    ['submachineGun', 'Submachine Gun', 22],
+    ['shotgun', 'Shotgun', 15],
+    ['assaultCarbine', 'Assault Carbine', 9],
+    ['assaultRifle', 'Assault Rifle', 45],
+    ['marksmanRifle', 'Marksman Rifle', 10],
+    ['sniperRifle', 'Sniper Rifle', 9],
+    ['machineGun', 'Machine Gun', 10],
+    ['launcher', 'Launcher Category', 6]
+  ];
+  const rgb = {
+    default: '#7F7F7F', grey: '#1D1D1D', green: '#152D00', yellow: '#686628',
+    blue: '#1C4156', violet: '#4C2A55', orange: '#3C1900', red: '#6D2418'
+  };
+  const variants = {
+    A: {
+      name: 'Shared progression',
+      note: 'Six predictable steps; category labels preserve the paired distinctions.',
+      colors: ['default', 'default', 'green', 'green', 'blue', 'blue', 'violet', 'orange', 'blue', 'red']
+    },
+    B: {
+      name: 'Role grouping',
+      note: 'Compact/mobile firearms share green; standard long guns share blue.',
+      colors: ['default', 'default', 'green', 'blue', 'green', 'blue', 'violet', 'orange', 'orange', 'red']
+    },
+    C: {
+      name: 'Category identity',
+      note: 'More neighboring categories differ, at the cost of a less predictable progression.',
+      colors: ['default', 'grey', 'green', 'yellow', 'blue', 'blue', 'violet', 'orange', 'orange', 'red']
+    }
+  };
+  const grid = root.querySelector('.palette-grid');
+  const summary = root.querySelector('.palette-summary');
+
+  function render(key) {
+    const variant = variants[key];
+    grid.replaceChildren();
+    categories.forEach(([categoryKey, label, count], index) => {
+      const colorName = variant.colors[index];
+      const row = document.createElement('div');
+      row.className = 'palette-row';
+      row.setAttribute('role', 'listitem');
+      row.setAttribute('aria-label', `${label}, ${colorName}, ${count} SPT templates`);
+      row.innerHTML = `
+        <strong class="palette-label">${label}</strong>
+        <code class="palette-key">${categoryKey}</code>
+        <span class="swatch-wrap"><span class="swatch" aria-hidden="true"></span><code class="swatch-name">${colorName}</code></span>
+        <span class="palette-count">${count}</span>`;
+      row.querySelector('.swatch').style.backgroundColor = rgb[colorName];
+      grid.appendChild(row);
+    });
+    summary.textContent = `${key} - ${variant.name}: ${variant.note}`;
+    root.querySelectorAll('[data-variant]').forEach(button => {
+      const selected = button.dataset.variant === key;
+      button.setAttribute('aria-pressed', String(selected));
+      button.classList.toggle('btn-primary', selected);
+    });
+  }
+
+  root.querySelectorAll('[data-variant]').forEach(button => {
+    button.addEventListener('click', () => render(button.dataset.variant));
+  });
+  render('A');
+})();
+</script>

@@ -1,5 +1,10 @@
 # Trader Buy Value Recolor Design Record
 
+> Historical design: superseded for Recoloring and Release vNext by
+> [GitHub issue #24](https://github.com/mosesdasilva/ODT-ItemInfo-4.0/issues/24)
+> and its child implementation tickets. Retained for the existing Trader Buy
+> Value rationale only; conflicting vNext behavior comes from the live tickets.
+
 Status: Approved for specification
 
 ## Goal

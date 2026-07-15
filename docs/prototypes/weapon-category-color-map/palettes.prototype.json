@@ -1,0 +1,73 @@
+{
+  "categories": [
+    { "key": "pistol", "label": "Pistol", "count": 26 },
+    { "key": "revolver", "label": "Revolver", "count": 3 },
+    { "key": "submachineGun", "label": "Submachine Gun", "count": 22 },
+    { "key": "shotgun", "label": "Shotgun", "count": 15 },
+    { "key": "assaultCarbine", "label": "Assault Carbine", "count": 9 },
+    { "key": "assaultRifle", "label": "Assault Rifle", "count": 45 },
+    { "key": "marksmanRifle", "label": "Marksman Rifle", "count": 10 },
+    { "key": "sniperRifle", "label": "Sniper Rifle", "count": 9 },
+    { "key": "machineGun", "label": "Machine Gun", "count": 10 },
+    { "key": "launcher", "label": "Launcher Category", "count": 6 }
+  ],
+  "variants": [
+    {
+      "key": "A",
+      "name": "Shared progression",
+      "colors": {
+        "pistol": "default",
+        "revolver": "default",
+        "submachineGun": "green",
+        "shotgun": "green",
+        "assaultCarbine": "blue",
+        "assaultRifle": "blue",
+        "marksmanRifle": "violet",
+        "sniperRifle": "orange",
+        "machineGun": "blue",
+        "launcher": "red"
+      }
+    },
+    {
+      "key": "B",
+      "name": "Role grouping",
+      "colors": {
+        "pistol": "default",
+        "revolver": "default",
+        "submachineGun": "green",
+        "shotgun": "blue",
+        "assaultCarbine": "green",
+        "assaultRifle": "blue",
+        "marksmanRifle": "violet",
+        "sniperRifle": "orange",
+        "machineGun": "orange",
+        "launcher": "red"
+      }
+    },
+    {
+      "key": "C",
+      "name": "Category identity",
+      "colors": {
+        "pistol": "default",
+        "revolver": "grey",
+        "submachineGun": "green",
+        "shotgun": "yellow",
+        "assaultCarbine": "blue",
+        "assaultRifle": "blue",
+        "marksmanRifle": "violet",
+        "sniperRifle": "orange",
+        "machineGun": "orange",
+        "launcher": "red"
+      }
+    }
+  ],
+  "excluded": {
+    "label": "Flare / signal weapon",
+    "count": 8,
+    "behavior": "Tier 1, no warning"
+  },
+  "warning": {
+    "label": "Flea Restricted",
+    "color": "tracerRed"
+  }
+}

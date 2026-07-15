@@ -1,5 +1,10 @@
 # Trader Buy Value and Equipment-Aware Background Recoloring
 
+> Historical specification: superseded for Recoloring and Release vNext by
+> [GitHub issue #24](https://github.com/mosesdasilva/ODT-ItemInfo-4.0/issues/24)
+> and its child implementation tickets. Retained as prior design history; do
+> not use its conflicting tier, warning, or release decisions for vNext work.
+
 ## Problem Statement
 
 ODT Item Info currently derives most item background colors from trader acquisition tiers and uses handbook value only as a limited fallback. That does not communicate the practical value of loot in a trader-only or no-flea-market playthrough. It can also select a trader without comparing all eligible offers, exclude Peacekeeper because his offer is denominated in dollars, and allow Fence to become an undesirable fallback.

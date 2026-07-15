@@ -67,7 +67,7 @@
         "assaultRifle": "blue",
         "marksmanRifle": "violet",
         "sniperRifle": "orange",
-        "machineGun": "orange",
+        "machineGun": "blue",
         "launcher": "red"
       }
     }

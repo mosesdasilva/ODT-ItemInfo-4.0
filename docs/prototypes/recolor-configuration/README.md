@@ -7,10 +7,10 @@ current recolor settings plus `tiers.json` and `tiers_hex.json`. It makes the
 proposed nesting concrete so the maintainer can judge whether settings are easy
 to find, edit, and explain before implementation is specified.
 
-Run from the repository root with PowerShell 7:
+Run from the repository root with Windows PowerShell 5.1:
 
 ```powershell
-pwsh -File docs/prototypes/recolor-configuration/inspect.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File docs/prototypes/recolor-configuration/inspect.ps1
 ```
 
 The viewer keeps state in memory. Use `b` to cycle the Background Recolor Basis,
@@ -37,7 +37,9 @@ Palette direction accepted by the maintainer:
 - Recolor Tiers 1–6 progress through `default`, `green`, `blue`, `violet`,
   `orange`, and `red`.
 - Weapon Category progresses through the same palette from lighter to heavier
-  categories; paired categories may share a color and Launcher uses `red`.
+  categories. Assault Carbine, Assault Rifle, and Machine Gun use `blue`;
+  Marksman Rifle uses `violet`; Sniper Rifle uses `orange`; and Launcher uses
+  `red`. Other category pairs may share a color.
 - Flea Restricted keeps its independent contextual meaning and uses
   `tracerRed`.
 

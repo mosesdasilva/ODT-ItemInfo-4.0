@@ -3,3 +3,5 @@ obj/
 ItemInfo.Tests/bin/
 ItemInfo.Tests/obj/
 *.user
+artifacts/
+TODO.md

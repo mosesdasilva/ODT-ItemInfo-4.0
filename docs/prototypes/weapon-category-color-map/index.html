@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weapon Category Color Map - throwaway prototype</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #edf1e8;
+      --muted: #a7b0a4;
+      --panel: rgba(18, 23, 21, 0.94);
+      --line: #344038;
+      --accent: #b7d292;
+      --default: #7f7f7f;
+      --green: #152d00;
+      --blue: #1c4156;
+      --violet: #4c2a55;
+      --orange: #3c1900;
+      --red: #6d2418;
+      --tracer-red: #ff3c3c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(87, 107, 79, 0.22), transparent 34rem),
+        linear-gradient(145deg, #111714 0%, #0a0d0c 70%);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 120px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 0.76rem;
+      font-weight: 750;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 850px; margin-bottom: 12px; font-size: clamp(2rem, 5vw, 4rem); line-height: 0.98; }
+    h2 { font-size: clamp(1.45rem, 3vw, 2.3rem); }
+    h3 { margin-bottom: 6px; }
+    .lede { max-width: 800px; color: var(--muted); font-size: 1.05rem; line-height: 1.6; }
+    .prototype-note { margin: 24px 0 34px; padding: 13px 16px; border-left: 3px solid #d1a34b; background: #211d13; color: #e8d6ae; }
+
+    .variant { display: none; }
+    .variant.active { display: block; }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+    }
+
+    .variant-header { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 24px; }
+    .variant-header p { max-width: 650px; margin-bottom: 0; color: var(--muted); line-height: 1.55; }
+
+    .progression-panel { padding: 24px; overflow-x: auto; }
+    .progression {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(145px, 1fr));
+      min-width: 930px;
+      position: relative;
+    }
+    .progression::before {
+      content: "";
+      position: absolute;
+      top: 41px;
+      left: 7%;
+      right: 7%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--default), #416b2c, #35728d, #785083, #814827, #a23d2d);
+    }
+    .stage { position: relative; z-index: 1; padding: 0 10px; text-align: center; }
+    .stage-number { display: grid; place-items: center; width: 34px; height: 34px; margin: 24px auto 18px; border: 2px solid #d5ddcf; border-radius: 50%; background: #111714; font-weight: 800; }
+    .swatch { min-height: 150px; padding: 20px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; display: flex; flex-direction: column; justify-content: end; box-shadow: inset 0 0 34px rgba(255,255,255,0.035); }
+    .swatch code { color: #fff; font-weight: 800; }
+    .swatch p { margin: 10px 0 0; color: rgba(255,255,255,0.83); font-size: 0.88rem; line-height: 1.45; }
+    .swatch.default { background: var(--default); }
+    .swatch.green { background: var(--green); }
+    .swatch.blue { background: var(--blue); }
+    .swatch.violet { background: var(--violet); }
+    .swatch.orange { background: var(--orange); }
+    .swatch.red { background: var(--red); }
+    .direction { margin: 22px 0 0; color: var(--muted); text-align: center; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .matrix { display: grid; grid-template-columns: 1.45fr 0.8fr 0.7fr; overflow: hidden; }
+    .matrix > div { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .matrix > div:nth-last-child(-n+3) { border-bottom: 0; }
+    .matrix .head { color: var(--muted); background: #161c19; font-size: 0.74rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
+    .matrix code { color: #d7e4c7; }
+    .color-cell { display: flex; align-items: center; gap: 10px; }
+    .chip { width: 20px; height: 20px; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; background: var(--chip); }
+    .shared { color: var(--muted); }
+    .config-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+    .rule { padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(17,23,20,0.88); }
+    .rule strong { display: block; margin-bottom: 6px; }
+    .rule span { color: var(--muted); line-height: 1.45; }
+
+    .semantics-grid { display: grid; grid-template-columns: 1.35fr 0.95fr; gap: 18px; }
+    .category-groups { padding: 22px; }
+    .group { display: grid; grid-template-columns: 140px 1fr auto; gap: 16px; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--line); }
+    .group:last-child { border-bottom: 0; }
+    .group-label { color: var(--muted); font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .group-items { font-weight: 680; }
+    .large-chip { min-width: 92px; padding: 9px 11px; border: 1px solid rgba(255,255,255,0.22); border-radius: 9px; background: var(--chip); text-align: center; font-family: Consolas, monospace; font-size: 0.82rem; }
+    .boundary-panel { padding: 22px; }
+    .boundary-panel > p { color: var(--muted); line-height: 1.5; }
+    .meaning { margin-top: 14px; padding: 15px; border-radius: 12px; background: #151b18; border: 1px solid var(--line); }
+    .meaning-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 8px; }
+    .meaning p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+    .meaning .mini-chip { padding: 5px 8px; border-radius: 7px; background: var(--chip); font-family: Consolas, monospace; font-size: 0.76rem; }
+    .not-tier { margin-top: 16px; color: #e4c27a; font-weight: 700; }
+
+    .switcher {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 44px minmax(220px, auto) 44px;
+      align-items: center;
+      transform: translateX(-50%);
+      overflow: hidden;
+      border: 1px solid #819178;
+      border-radius: 999px;
+      background: #edf1e8;
+      color: #101510;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+    }
+    .switcher button { height: 44px; border: 0; background: transparent; color: #101510; cursor: pointer; font-size: 1.3rem; }
+    .switcher button:hover { background: #d9e1d3; }
+    .switcher-label { padding: 0 14px; text-align: center; font-size: 0.86rem; font-weight: 760; }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 22px, 1180px); padding-top: 28px; }
+      .variant-header { display: block; }
+      .matrix { grid-template-columns: 1fr 0.8fr; }
+      .matrix .shared, .matrix .head:last-of-type { display: none; }
+      .matrix > div:nth-last-child(-n+3) { border-bottom: 1px solid var(--line); }
+      .matrix > div:nth-last-child(-n+2) { border-bottom: 0; }
+      .config-foot, .semantics-grid { grid-template-columns: 1fr; }
+      .group { grid-template-columns: 1fr; gap: 7px; }
+      .large-chip { width: fit-content; }
+      .switcher { grid-template-columns: 42px minmax(190px, auto) 42px; }
+    }
+
+    @media print {
+      .switcher { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <p class="eyebrow">Wayfinder prototype / Issue 20</p>
+    <h1>Default Weapon Category Color Map</h1>
+    <p class="lede">One candidate mapping, viewed three ways. The map uses supported native Tarkov colors and preserves independent meaning for categories, tiers, and warnings.</p>
+    <div class="prototype-note"><strong>THROWAWAY PROTOTYPE.</strong> This file does not modify configuration or runtime behavior.</div>
+
+    <section class="variant" data-variant="progression">
+      <div class="variant-header">
+        <div><p class="eyebrow">View A</p><h2>Progression rail</h2></div>
+        <p>Best for judging the agreed visual motion from lighter firearm categories to heavier and more specialized ones. Shared colors keep ten categories within six readable stages.</p>
+      </div>
+      <div class="panel progression-panel">
+        <div class="progression">
+          <article class="stage"><div class="stage-number">1</div><div class="swatch default"><code>default</code><p>Pistol<br>Revolver</p></div></article>
+          <article class="stage"><div class="stage-number">2</div><div class="swatch green"><code>green</code><p>Submachine Gun<br>Shotgun</p></div></article>
+          <article class="stage"><div class="stage-number">3</div><div class="swatch blue"><code>blue</code><p>Assault Carbine<br>Assault Rifle<br>Machine Gun</p></div></article>
+          <article class="stage"><div class="stage-number">4</div><div class="swatch violet"><code>violet</code><p>Marksman Rifle</p></div></article>
+          <article class="stage"><div class="stage-number">5</div><div class="swatch orange"><code>orange</code><p>Sniper Rifle</p></div></article>
+          <article class="stage"><div class="stage-number">!</div><div class="swatch red"><code>red</code><p>Launcher Category</p></div></article>
+        </div>
+        <p class="direction">lighter / more compact &nbsp; --------------------> &nbsp; heavier / specialized</p>
+      </div>
+    </section>
+
+    <section class="variant" data-variant="configuration">
+      <div class="variant-header">
+        <div><p class="eyebrow">View B</p><h2>Configuration matrix</h2></div>
+        <p>Best for checking the actual editable contract. Category keys own independent Color Specifications even when their default values match.</p>
+      </div>
+      <div class="panel matrix">
+        <div class="head">Configuration key</div><div class="head">Default</div><div class="head">Shares default with</div>
+        <div><code>pistol</code></div><div class="color-cell"><i class="chip" style="--chip:var(--default)"></i><code>default</code></div><div class="shared">revolver</div>
+        <div><code>revolver</code></div><div class="color-cell"><i class="chip" style="--chip:var(--default)"></i><code>default</code></div><div class="shared">pistol</div>
+        <div><code>submachineGun</code></div><div class="color-cell"><i class="chip" style="--chip:var(--green)"></i><code>green</code></div><div class="shared">shotgun</div>
+        <div><code>shotgun</code></div><div class="color-cell"><i class="chip" style="--chip:var(--green)"></i><code>green</code></div><div class="shared">submachineGun</div>
+        <div><code>assaultCarbine</code></div><div class="color-cell"><i class="chip" style="--chip:var(--blue)"></i><code>blue</code></div><div class="shared">assaultRifle</div>
+        <div><code>assaultRifle</code></div><div class="color-cell"><i class="chip" style="--chip:var(--blue)"></i><code>blue</code></div><div class="shared">assaultCarbine</div>
+        <div><code>marksmanRifle</code></div><div class="color-cell"><i class="chip" style="--chip:var(--violet)"></i><code>violet</code></div><div class="shared">-</div>
+        <div><code>sniperRifle</code></div><div class="color-cell"><i class="chip" style="--chip:var(--orange)"></i><code>orange</code></div><div class="shared">-</div>
+        <div><code>machineGun</code></div><div class="color-cell"><i class="chip" style="--chip:var(--blue)"></i><code>blue</code></div><div class="shared">assaultCarbine, assaultRifle</div>
+        <div><code>launcher</code></div><div class="color-cell"><i class="chip" style="--chip:var(--red)"></i><code>red</code></div><div class="shared">none by ownership</div>
+      </div>
+      <div class="config-foot">
+        <div class="rule"><strong>Signal and flare weapons</strong><span>Tier 1, no warning. They are deliberately outside Launcher Category.</span></div>
+        <div class="rule"><strong>Unknown category</strong><span>Warn once, then use the selected Background Recolor Basis.</span></div>
+        <div class="rule"><strong>Customization</strong><span>Every key remains independently configurable despite shared defaults.</span></div>
+      </div>
+    </section>
+
+    <section class="variant" data-variant="semantics">
+      <div class="variant-header">
+        <div><p class="eyebrow">View C</p><h2>Semantic boundary check</h2></div>
+        <p>Best for catching the dangerous interpretation: equal or neighboring colors do not make Weapon Categories into Recolor Tiers, and do not give them warning semantics.</p>
+      </div>
+      <div class="semantics-grid">
+        <div class="panel category-groups">
+          <div class="group"><span class="group-label">Sidearms</span><span class="group-items">Pistol, Revolver</span><span class="large-chip" style="--chip:var(--default)">default</span></div>
+          <div class="group"><span class="group-label">Close-range</span><span class="group-items">Submachine Gun, Shotgun</span><span class="large-chip" style="--chip:var(--green)">green</span></div>
+          <div class="group"><span class="group-label">General / automatic</span><span class="group-items">Assault Carbine, Assault Rifle, Machine Gun</span><span class="large-chip" style="--chip:var(--blue)">blue</span></div>
+          <div class="group"><span class="group-label">Precision</span><span class="group-items">Marksman Rifle</span><span class="large-chip" style="--chip:var(--violet)">violet</span></div>
+          <div class="group"><span class="group-label">Long-range</span><span class="group-items">Sniper Rifle</span><span class="large-chip" style="--chip:var(--orange)">orange</span></div>
+          <div class="group"><span class="group-label">Contextual</span><span class="group-items">Launcher Category</span><span class="large-chip" style="--chip:var(--red)">red</span></div>
+        </div>
+        <aside class="panel boundary-panel">
+          <h3>Three independent meanings</h3>
+          <p>These values may look related, but configuration ownership and labels keep their semantics separate.</p>
+          <div class="meaning"><div class="meaning-header"><strong>Recolor Tier 6</strong><span class="mini-chip" style="--chip:var(--red)">red</span></div><p>Neutral ordinal band selected by a tier-producing classifier.</p></div>
+          <div class="meaning"><div class="meaning-header"><strong>Launcher Category</strong><span class="mini-chip" style="--chip:var(--red)">red</span></div><p>Weapon Category contextual classification. It is not Tier 6 or Tier 7.</p></div>
+          <div class="meaning"><div class="meaning-header"><strong>Flea Restricted</strong><span class="mini-chip" style="--chip:var(--tracer-red)">tracerRed</span></div><p>Independent opt-in warning that outranks specialized weapon classification.</p></div>
+          <p class="not-tier">Shared hue is allowed. Shared meaning is not.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <nav class="switcher" aria-label="Prototype variant switcher">
+    <button type="button" data-direction="-1" aria-label="Previous variant">&#8592;</button>
+    <span class="switcher-label" aria-live="polite"></span>
+    <button type="button" data-direction="1" aria-label="Next variant">&#8594;</button>
+  </nav>
+
+  <script>
+    const variants = [
+      { key: "progression", label: "A - Progression rail" },
+      { key: "configuration", label: "B - Configuration matrix" },
+      { key: "semantics", label: "C - Semantic boundaries" }
+    ];
+
+    const params = new URLSearchParams(window.location.search);
+    let current = Math.max(0, variants.findIndex((variant) => variant.key === params.get("variant")));
+
+    function render() {
+      document.querySelectorAll("[data-variant]").forEach((element) => {
+        element.classList.toggle("active", element.dataset.variant === variants[current].key);
+      });
+      document.querySelector(".switcher-label").textContent = variants[current].label;
+      params.set("variant", variants[current].key);
+      history.replaceState(null, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+    }
+
+    function move(direction) {
+      current = (current + direction + variants.length) % variants.length;
+      render();
+    }
+
+    document.querySelectorAll("[data-direction]").forEach((button) => {
+      button.addEventListener("click", () => move(Number(button.dataset.direction)));
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const target = event.target;
+      if (target.matches("input, textarea, [contenteditable]")) return;
+      if (event.key === "ArrowLeft") move(-1);
+      if (event.key === "ArrowRight") move(1);
+    });
+
+    render();
+  </script>
+</body>
+</html>
