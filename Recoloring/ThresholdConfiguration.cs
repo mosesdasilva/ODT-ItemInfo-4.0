@@ -4,6 +4,20 @@ namespace ItemInfo.Recoloring;
 
 public static class ThresholdConfiguration
 {
+    public static double[] ReadAscending(JsonElement section, int count, double[] fallback, string name, Action<string> warn)
+    {
+        var values = new List<double>();
+        if (section.ValueKind == JsonValueKind.Array)
+            foreach (var value in section.EnumerateArray())
+                if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && double.IsFinite(number))
+                    values.Add(number);
+                else
+                    return Invalid(name, fallback, warn);
+        if (values.Count != count || values.Zip(values.Skip(1)).Any(pair => pair.First >= pair.Second))
+            return Invalid(name, fallback, warn);
+        return values.ToArray();
+    }
+
     public static RecolorThresholds Load(string json, Action<string> warn)
     {
 		var defaults = RecolorThresholds.Defaults;
@@ -27,12 +41,7 @@ public static class ThresholdConfiguration
     {
         if (!root.TryGetProperty(name, out var section) || section.ValueKind != JsonValueKind.Array)
             return Invalid(name, fallback, warn);
-        var values = new List<double>();
-        foreach (var value in section.EnumerateArray())
-            if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && double.IsFinite(number)) values.Add(number); else return Invalid(name, fallback, warn);
-        if (values.Count != count || values.Zip(values.Skip(1)).Any(pair => pair.First >= pair.Second))
-            return Invalid(name, fallback, warn);
-        return values.ToArray();
+        return ReadAscending(section, count, fallback, name, warn);
     }
 
     private static double[] Invalid(string name, double[] fallback, Action<string> warn)

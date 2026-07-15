@@ -10,43 +10,25 @@ English only (for now).
 ### Static background recoloring
 
 `RarityRecolor` supports two normal Background Recolor Basis choices. The default
-`useTraderBuyPriceForRecolor: false` preserves Trader Tier. Setting it to `true`
-uses the highest accepted, non-prohibited trader offer (excluding Fence), divided
-by the item's inventory footprint. Unsellable items have a value of zero.
+`basis: "TraderTier"` preserves Trader Tier. `basis: "TraderBuyValue"` uses the
+highest accepted, non-prohibited trader offer (excluding Fence), divided by the
+item's Inventory Footprint. Unsellable Items have a value of zero.
 
-Specialized classifiers are enabled independently by default:
+`config/config.json` is the sole Recolor Configuration. It contains exactly six
+neutral Recolor Tiers, their colors, Trader Buy Value cutoffs, display settings,
+custom overrides, and the Recolor Blacklist. `tiers.json` and `tiers_hex.json`
+are no longer runtime or package inputs. Invalid nested sections and individual
+colors warn and fall back independently.
 
-- `usePenetrationForAmmoRecolor` uses ammunition penetration.
-- `useArmorClassForRecolor` uses armor class and treats armored rigs as armor.
-- `useRigCapacityForRecolor` uses direct-grid capacity for unarmored rigs.
-- `useBackpackCapacityForRecolor` uses direct-grid capacity for backpacks.
+Color Specifications accept the 12 native Tarkov color names or opaque `#RGB`
+and `#RRGGBB` values. Hex backgrounds require Color Converter API 1.1.1 or newer
+on every EFT client. It remains an external client plugin: this server mod does
+not link, bundle, or declare it as a server dependency.
 
-`markFleaMarketBannedItemsAsOverpowered` is disabled by default. When enabled,
-the precedence is: Recolor Blacklist, Custom Rarity Override, Flea Ban Warning,
-specialized classifier, then the selected Background Recolor Basis. Missing
-specialized data emits an item-specific warning and falls back to the selected
-basis without stopping startup.
-
-The `TRADER_BUY_VALUE`, `AMMO_PENETRATION`, `RIG_CAPACITY`, and
-`BACKPACK_CAPACITY` arrays in `config/tiers.json` are validated separately.
-Each must contain the documented number of finite, strictly ascending values.
-Only an invalid section is replaced by built-in defaults; values are never
-silently reordered.
-This BETA feature clears and changes background color on EVERY item in the game based on MMO style rarity tier-list with colors that make actual sense. 
-Tiers are based on trader level you can purchase or barter the item. 
-Barters are considered +1 rarity level. 
-Banned on flea market items are given highest rarity - overpowered. 
-The tier list: 
-* Common (grey background, bought with level 1 traders) 
-* Rare (blue, level 2 trades for currency and level 1 barters) 
-* Epic (purple, level 3 and level 2 barters) 
-* Legendary (dim yellow, level 4 and level 3 barters) 
-* Uber (bright yellow, level 4 barters only) 
-* UNOBTAINIUM (bright green, super rare spawns, not 100% accurate to actual in-game spawns, especially for keys, but good enough) 
-* OP (bright red, banned on flea market) 
-* CUSTOM (dim red, not used by default). 
-
-Works for 95% of items well enough to be very much usable. Can add tier name to Prices Info module. Add custom item rarities in config. 
+Existing users must follow the [clean migration and complete setting lineage](docs/migration/recolor-configuration-vnext.md).
+The optional Prices Info label names the active classifier, such as Trader Tier
+or Value Tier, instead of assigning RPG rarity names. Explicit overrides select
+one of the same six neutral Recolor Tiers; they do not create additional tiers.
 ![image](https://user-images.githubusercontent.com/33424002/215009820-772c0b0a-3659-4923-8b63-266ce0d05bd5.png)
 
 

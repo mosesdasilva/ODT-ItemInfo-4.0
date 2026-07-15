@@ -1,7 +1,21 @@
 namespace ItemInfo.Recoloring;
 
-public sealed class StaticRecolorPass(RecolorSettings settings, RecolorThresholds thresholds)
+public sealed class StaticRecolorPass
 {
+    private readonly RecolorSettings settings;
+    private readonly RecolorThresholds thresholds;
+    private readonly IReadOnlyList<ColorSpecification>? tierColors;
+
+    public StaticRecolorPass(
+        RecolorSettings settings,
+        RecolorThresholds thresholds,
+        IReadOnlyList<ColorSpecification>? tierColors = null)
+    {
+        this.settings = settings;
+        this.thresholds = thresholds;
+        this.tierColors = tierColors;
+    }
+
     public IReadOnlyList<RecolorResult> Run(IEnumerable<StaticRecolorRequest> requests, Action<string> warn)
     {
         var results = new List<RecolorResult>();
@@ -14,7 +28,17 @@ public sealed class StaticRecolorPass(RecolorSettings settings, RecolorThreshold
     {
 	    var result = Classify(request.Item, request.Blacklisted, request.Custom);
 	    if (result.Tier is not null)
+	    {
 		    request.ApplyTier(result.Tier.Value);
+		    if (request.ApplyPresentation is not null && tierColors is not null && result.Tier.Value is >= RecolorTier.Common and <= RecolorTier.Unobtainium)
+		    {
+			    var tierNumber = (int)result.Tier.Value;
+			    var valueBased = settings.UseTraderBuyPriceForRecolor;
+			    var label = valueBased ? "Value Tier" : "Trader Tier";
+			    var translationKey = valueBased ? "RecolorValueTier" : "RecolorTraderTier";
+			    request.ApplyPresentation(new(tierColors[tierNumber - 1], $"{label} {tierNumber}", translationKey, tierNumber));
+		    }
+	    }
 	    if (result.Warning is not null)
 		    warn(result.Warning);
 	    return result;
@@ -74,7 +98,7 @@ public sealed class StaticRecolorPass(RecolorSettings settings, RecolorThreshold
     }
 
     private static RecolorTier TraderTier(RecolorItem item) =>
-        item.TraderTier is >= 1 and <= 6 ? (RecolorTier)item.TraderTier : RecolorTier.Custom2;
+        item.TraderTier is >= 1 and <= 6 ? (RecolorTier)item.TraderTier : RecolorTier.Common;
 
     private static RecolorTier TierByLowerBounds(double value, double[] bounds)
     {
@@ -94,4 +118,29 @@ public sealed record StaticRecolorRequest(
     RecolorItem Item,
     Action<RecolorTier> ApplyTier,
     bool Blacklisted = false,
-    RecolorTier? Custom = null);
+    RecolorTier? Custom = null,
+    Action<RecolorPresentation>? ApplyPresentation = null);
+
+public sealed record RecolorPresentation(
+    ColorSpecification Color,
+    string ContextualLabel,
+    string ContextualLabelTranslationKey,
+    int TierNumber)
+{
+    public string Colorize(string text) => $"<color={Color.RichTextRgb}>{text}</color>";
+}
+
+public static class RecolorPresentationRenderer
+{
+    public static string AppendContextualLabel(
+        string existingText,
+        RecolorPresentation presentation,
+        IReadOnlyDictionary<string, string> translations)
+    {
+        var contextualLabel = translations.TryGetValue(presentation.ContextualLabelTranslationKey, out var translatedLabel) &&
+                              !string.IsNullOrWhiteSpace(translatedLabel)
+            ? $"{translatedLabel} {presentation.TierNumber}"
+            : presentation.ContextualLabel;
+        return $"{existingText} | {presentation.Colorize(contextualLabel)}\n\n";
+    }
+}

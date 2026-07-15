@@ -58,8 +58,6 @@ public class ItemInfo(
 	private Timer? _timer;
 	private readonly StaticRecolorPassRunner _staticRecolorPassRunner = new();
 	public required ModConfig Config;
-	public required ModTiers Tiers { get; set; }
-	public required ModTiersHex TiersHex { get; set; }
 	private RecolorThresholds RecolorThresholds { get; set; } = RecolorThresholds.Defaults;
 	public required ModTranslation Translation { get; set; }
 	public required ModTranslationDebug ModTranslationDebug { get; set; }
@@ -82,13 +80,18 @@ public class ItemInfo(
 	    PathToMod = modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
 		
 	    // Get configs
+	    var configPath = System.IO.Path.Combine(PathToMod, "config/config.json");
+	    var configJson = File.ReadAllText(configPath);
 	    Config = modHelper.GetJsonDataFromFile<ModConfig>(PathToMod, "config/config.json");
+	    var staleLegacyFiles = new[] { "tiers.json", "tiers_hex.json" }
+		    .Where(file => File.Exists(System.IO.Path.Combine(PathToMod, "config", file)))
+		    .ToArray();
+	    Config.ModRarityRecolor = RecolorConfiguration.Load(configJson, staleLegacyFiles, warning => logger.Warning(warning));
 	    ModBsgBlackList = modHelper.GetJsonDataFromFile<ModBsgBlackList>(PathToMod, "config/bsgblacklist.json");
-	    
-	    // Get tiers list
-	    Tiers = modHelper.GetJsonDataFromFile<ModTiers>(PathToMod, "config/tiers.json");
-	    RecolorThresholds = ThresholdConfiguration.Load(File.ReadAllText(System.IO.Path.Combine(PathToMod, "config/tiers.json")), warning => logger.Warning(warning));
-	    TiersHex = modHelper.GetJsonDataFromFile<ModTiersHex>(PathToMod, "config/tiers_hex.json");
+	    RecolorThresholds = RecolorThresholds.Defaults with
+	    {
+		    TraderBuyValue = [.. Config.ModRarityRecolor.TraderBuyValuePerSlotCutoffs]
+	    };
 	    
 	    // Get translations
 	    Translation = jsonUtil.DeserializeFromFile<ModTranslation>(PathToMod + "/config/translations.json") ?? 
@@ -291,13 +294,13 @@ public class ItemInfo(
 	    var recolorSettings = new RecolorSettings
 	    {
 		    UseTraderBuyPriceForRecolor = Config.ModRarityRecolor.UseTraderBuyPriceForRecolor,
-		    MarkFleaMarketBannedItemsAsOverpowered = Config.ModRarityRecolor.MarkFleaMarketBannedItemsAsOverpowered,
-		    UsePenetrationForAmmoRecolor = Config.ModRarityRecolor.UsePenetrationForAmmoRecolor,
-		    UseArmorClassForRecolor = Config.ModRarityRecolor.UseArmorClassForRecolor,
-		    UseRigCapacityForRecolor = Config.ModRarityRecolor.UseRigCapacityForRecolor,
-		    UseBackpackCapacityForRecolor = Config.ModRarityRecolor.UseBackpackCapacityForRecolor
+		    MarkFleaMarketBannedItemsAsOverpowered = false,
+		    UsePenetrationForAmmoRecolor = false,
+		    UseArmorClassForRecolor = false,
+		    UseRigCapacityForRecolor = false,
+		    UseBackpackCapacityForRecolor = false
 	    };
-	    var staticRecolorPass = new StaticRecolorPass(recolorSettings, RecolorThresholds);
+	    var staticRecolorPass = new StaticRecolorPass(recolorSettings, RecolorThresholds, Config.ModRarityRecolor.TierColors);
 	    
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
@@ -786,15 +789,9 @@ public class ItemInfo(
 		    
 		    // Rarity recolor handling
 		    if (Config.ModRarityRecolor.Enabled &&
-		        !Config.RarityRecolorBlacklist.Contains(templateItem.Parent) &&
-		        !Config.RarityRecolorBlacklist.Contains(itemId))
+		        !Config.ModRarityRecolor.Blacklist.Contains(templateItem.Parent.ToString()) &&
+		        !Config.ModRarityRecolor.Blacklist.Contains(itemId.ToString()))
 		    {
-			    if ((!Config.ModRarityRecolor.BypassAmmoRecolor ||
-			         templateItem.Parent != BaseClasses.AMMO) &&
-			        (!Config.ModRarityRecolor.BypassKeysRecolor ||
-			         (templateItem.Parent != BaseClasses.KEY_MECHANICAL &&
-			          templateItem.Parent != BaseClasses.KEYCARD)))
-			    {
 				    bool isAmmo = itemHelper.IsOfBaseclass(itemId, BaseClasses.AMMO);
 				    bool isArmor = itemHelper.IsOfBaseclass(itemId, BaseClasses.ARMOR);
 				    bool isRig = itemHelper.IsOfBaseclass(itemId, BaseClasses.VEST);
@@ -807,7 +804,7 @@ public class ItemInfo(
 					    : RecolorItemKind.Normal;
 				    var grids = itemProperties.Grids?.Where(grid => grid.Properties is not null)
 					    .Select(grid => (grid.Properties!.CellsH ?? 0, grid.Properties.CellsV ?? 0)).ToList();
-				    Config.ModRarityRecolor.CustomRarity.TryGetValue(itemId, out int customRarity);
+				    Config.ModRarityRecolor.CustomOverrides.TryGetValue(itemId.ToString(), out int customRarity);
 				    int? defaultFrontPlateClass = null;
 				    if (kind is RecolorItemKind.Armor or RecolorItemKind.ArmoredRig)
 				    {
@@ -823,124 +820,21 @@ public class ItemInfo(
 							    itemProperties.Width, itemProperties.Height, itemProperties.PenetrationPower,
 							    itemProperties.ArmorClass, itemProperties.ArmorClass, defaultFrontPlateClass, grids),
 						    tier => itemRarity = (int)tier,
-						    Custom: customRarity > 0 ? (RecolorTier?)customRarity : null),
+						    Custom: customRarity > 0 ? (RecolorTier?)customRarity : null,
+						    ApplyPresentation: presentation =>
+						    {
+							    itemProperties.BackgroundColor = presentation.Color.BackgroundValue;
+							    tiersHexCode.Clear().Append(presentation.Color.RichTextRgb);
+							    if (Config.ModRarityRecolor.AddContextualLabelToPricesInfo)
+								    ItemDescription[itemId].PriceString = RecolorPresentationRenderer.AppendContextualLabel(
+									    ItemDescription[itemId].PriceString,
+									    presentation,
+									    i18n);
+						    }),
 					    warning => logger.Warning(warning));
-				    
-				    string tier;
-				    
-				    switch (itemRarity)
-				    {
-					    case 7:
-						    tier = i18n["OVERPOWERED"];
-						    itemProperties.BackgroundColor = TiersHex["OVERPOWERED"];
-						    tiersHexCode.Clear().Append(TiersHex["OVERPOWERED"]);
-						    break;
-					    case 1:
-						    tier = i18n["COMMON"];
-						    itemProperties.BackgroundColor = TiersHex["COMMON"];
-						    tiersHexCode.Clear().Append(TiersHex["COMMON"]);
-						    break;
-					    case 2:
-						    tier = i18n["RARE"];
-						    itemProperties.BackgroundColor = TiersHex["RARE"];
-						    tiersHexCode.Clear().Append(TiersHex["RARE"]);
-						    break;
-					    case 3:
-						    tier = i18n["EPIC"];
-						    itemProperties.BackgroundColor = TiersHex["EPIC"];
-						    tiersHexCode.Clear().Append(TiersHex["EPIC"]);
-						    break;
-					    case 4:
-						    tier = i18n["LEGENDARY"];
-						    itemProperties.BackgroundColor = TiersHex["LEGENDARY"];
-						    tiersHexCode.Clear().Append(TiersHex["LEGENDARY"]);
-						    break;
-					    case 5:
-						    tier = i18n["UBER"];
-						    itemProperties.BackgroundColor = TiersHex["UBER"];
-						    tiersHexCode.Clear().Append(TiersHex["UBER"]);
-						    break;
-					    case 6:
-						    tier = i18n["UNOBTAINIUM"];
-						    itemProperties.BackgroundColor = TiersHex["UNOBTAINIUM"];
-						    tiersHexCode.Clear().Append(TiersHex["UNOBTAINIUM"]);
-						    break;
-					    case 8:
-						    tier = i18n["CUSTOM"];
-						    itemProperties.BackgroundColor = TiersHex["CUSTOM"];
-						    tiersHexCode.Clear().Append(TiersHex["CUSTOM"]);
-						    break;
-					    default: // itemRarity >= 9 or itemRarity == 0 with fallback disabled
-						    tier = i18n["CUSTOM2"];
-						    itemProperties.BackgroundColor = TiersHex["CUSTOM2"];
-						    tiersHexCode.Clear().Append(TiersHex["CUSTOM2"]);
-						    break;
-				    }
-
-				    // Rarity recolor fallback handling
-				    if (Config.ModRarityRecolor.FallbackValueBasedRecolor &&
-				        itemRarity == 0)
-				    {
-					    double itemValue = itemInHandbook.Price ?? 0;
-					    int itemSlots = itemProperties.Width * itemProperties.Height ?? 0;
-
-					    if (itemSlots > 1)
-						    itemValue = Math.Round(itemValue / itemSlots);
-
-					    if (templateItem.Parent == "543be5cb4bdc2deb348b4568")
-						    itemValue = traderPrice;
-
-					    switch (itemValue)
-					    {
-						    case var _ when itemValue < Tiers.GetNumber("COMMON_VALUE_FALLBACK"):
-							    tier = i18n["COMMON"];
-							    itemProperties.BackgroundColor = TiersHex["COMMON"];
-							    tiersHexCode.Clear().Append(TiersHex["COMMON"]);
-							    break;
-						    case var _ when itemValue < Tiers.GetNumber("RARE_VALUE_FALLBACK"):
-							    tier = i18n["RARE"];
-							    itemProperties.BackgroundColor = TiersHex["RARE"];
-							    tiersHexCode.Clear().Append(TiersHex["RARE"]);
-							    break;
-						    case var _ when itemValue < Tiers.GetNumber("EPIC_VALUE_FALLBACK"):
-							    tier = i18n["EPIC"];
-							    itemProperties.BackgroundColor = TiersHex["EPIC"];
-							    tiersHexCode.Clear().Append(TiersHex["EPIC"]);
-							    break;
-						    case var _ when itemValue < Tiers.GetNumber("LEGENDARY_VALUE_FALLBACK"):
-							    tier = i18n["LEGENDARY"];
-							    itemProperties.BackgroundColor = TiersHex["LEGENDARY"];
-							    tiersHexCode.Clear().Append(TiersHex["LEGENDARY"]);
-							    break;
-						    case var _ when itemValue < Tiers.GetNumber("UBER_VALUE_FALLBACK"):
-							    tier = i18n["UBER"];
-							    itemProperties.BackgroundColor = TiersHex["UBER"];
-							    tiersHexCode.Clear().Append(TiersHex["UBER"]);
-							    break;
-						    default:
-							    tier = i18n["UNOBTAINIUM"];
-							    itemProperties.BackgroundColor = TiersHex["UNOBTAINIUM"];
-							    tiersHexCode.Clear().Append(TiersHex["UNOBTAINIUM"]);
-							    break;
-					    }
-				    }
 				    
 				    if (Config.ModRarityRecolor.AddColorToName)
 						Utils.AddColorToName(itemId, tiersHexCode.ToString(), UserLocale);
-				    
-				    Utils.AddColorToShortName(itemId, TiersHex["COMMON"], UserLocale);
-
-				    if (Config.ModRarityRecolor.AddTierNameToPricesInfo &&
-				        !string.IsNullOrEmpty(tier))
-				    {
-					    ItemDescription[itemId].PriceString += " | " +
-					                                           "<color=" +
-					                                           tiersHexCode +
-					                                           ">" +
-					                                           tier +
-					                                           "</color>\n\n";
-				    }
-			    }
 		    }
 	    }
 	    
@@ -1015,12 +909,3 @@ public class ItemInfo(
 	    }
     }
 }
-
-public class ModTiers : Dictionary<string, JsonElement>
-{
-	public double GetNumber(string key) => this[key].ValueKind == JsonValueKind.String
-		? double.Parse(this[key].GetString()!, CultureInfo.InvariantCulture)
-		: this[key].GetDouble();
-}
-
-public class ModTiersHex : Dictionary<string, string>;

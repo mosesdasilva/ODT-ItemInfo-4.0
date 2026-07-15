@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using ItemInfo.Recoloring;
 using SPTarkov.Server.Core.Models.Common;
 
 namespace ItemInfo.Models;
@@ -38,40 +39,8 @@ public class ModConfig
 		public bool Enabled { get; set; }
 	}
 	
-	[JsonPropertyName("RarityRecolor")]
-	public RarityRecolor ModRarityRecolor { get; set; } = new();
-	public class RarityRecolor
-	{
-		[JsonPropertyName("enabled")]
-		public bool Enabled { get; set; }
-		[JsonPropertyName("useTraderBuyPriceForRecolor")]
-		public bool UseTraderBuyPriceForRecolor { get; set; }
-		[JsonPropertyName("markFleaMarketBannedItemsAsOverpowered")]
-		public bool MarkFleaMarketBannedItemsAsOverpowered { get; set; }
-		[JsonPropertyName("usePenetrationForAmmoRecolor")]
-		public bool UsePenetrationForAmmoRecolor { get; set; } = true;
-		[JsonPropertyName("useArmorClassForRecolor")]
-		public bool UseArmorClassForRecolor { get; set; } = true;
-		[JsonPropertyName("useRigCapacityForRecolor")]
-		public bool UseRigCapacityForRecolor { get; set; } = true;
-		[JsonPropertyName("useBackpackCapacityForRecolor")]
-		public bool UseBackpackCapacityForRecolor { get; set; } = true;
-		[JsonPropertyName("addColorToName")]
-		public bool AddColorToName { get; set; }
-		[JsonPropertyName("addTierNameToPricesInfo")]
-		public bool AddTierNameToPricesInfo { get; set; }
-		[JsonPropertyName("fallbackValueBasedRecolor")]
-		public bool FallbackValueBasedRecolor { get; set; }
-		[JsonPropertyName("bypassAmmoRecolor")]
-		public bool BypassAmmoRecolor { get; set; }
-		[JsonPropertyName("bypassKeysRecolor")]
-		public bool BypassKeysRecolor { get; set; }
-		[JsonPropertyName("customRarity")]
-		public Dictionary<string, int> CustomRarity { get; set; }
-	}
-	
-	[JsonPropertyName("RarityRecolorBlacklist")]
-	public List<MongoId> RarityRecolorBlacklist { get; set; }
+	[JsonIgnore]
+	public RecolorConfiguration ModRarityRecolor { get; set; } = RecolorConfiguration.Defaults;
 	[JsonPropertyName("ArmorInfo")]
 	public ArmorInfo ModArmorInfo { get; set; } = new();
 	public class ArmorInfo
