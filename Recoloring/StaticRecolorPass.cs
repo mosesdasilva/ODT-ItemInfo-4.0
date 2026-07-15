@@ -22,7 +22,7 @@ public sealed class StaticRecolorPass
             {
                 UseTraderBuyPriceForRecolor = configuration.UseTraderBuyPriceForRecolor,
                 UsePenetrationForAmmoRecolor = configuration.SpecializedClassifiers.Ammunition.Enabled,
-                UseArmorClassForRecolor = false,
+                UseArmorClassForRecolor = configuration.SpecializedClassifiers.ProtectiveItems.Enabled,
                 UseRigCapacityForRecolor = configuration.SpecializedClassifiers.UnarmoredRigs.Enabled,
                 UseBackpackCapacityForRecolor = configuration.SpecializedClassifiers.Backpacks.Enabled
             },
@@ -56,6 +56,7 @@ public sealed class StaticRecolorPass
 			    {
 				    RecolorContextualLabelKind.PenetrationTier => ("Penetration Tier", "RecolorPenetrationTier"),
 				    RecolorContextualLabelKind.CapacityTier => ("Capacity Tier", "RecolorCapacityTier"),
+				    RecolorContextualLabelKind.ArmorClass => ("Armor Class", "RecolorArmorClass"),
 				    _ when settings.UseTraderBuyPriceForRecolor => ("Value Tier", "RecolorValueTier"),
 				    _ => ("Trader Tier", "RecolorTraderTier")
 			    };
@@ -93,11 +94,38 @@ public sealed class StaticRecolorPass
 
     private RecolorResult ClassifyArmor(RecolorItem item)
     {
-        var armorClass = item.DefaultFrontPlateClass ?? item.SoftArmorClass ?? item.ArmorClass;
-        return armorClass is >= 1 and <= 6
-            ? new(true, (RecolorTier)armorClass.Value)
-            : Fallback(item, "armor class or default front plate");
+        var usesDirectRootArmorClass = item.ProtectiveType is not null;
+        var armorClass = usesDirectRootArmorClass
+            ? item.ArmorClass
+            : item.DefaultFrontPlateClass ?? item.SoftArmorClass ?? item.ArmorClass;
+        if (armorClass is >= 1 and <= 6)
+            return new(true, (RecolorTier)armorClass.Value, ContextualLabelKind: RecolorContextualLabelKind.ArmorClass);
+
+        if (item.ProtectiveType is not null)
+        {
+            var normal = ClassifyNormal(item);
+            var sourceFailure = item.ArmorClass is null
+                ? "was missing"
+                : $"was {item.ArmorClass.Value}, outside 1 through 6";
+            var name = string.IsNullOrWhiteSpace(item.Name) ? "Unknown item" : item.Name;
+            return normal with
+            {
+                Warning = $"[ItemInfo] Protective Item {name} ({item.Id}) recognized as {ProtectiveTypeLabel(item.ProtectiveType.Value)}; " +
+                          $"direct root armor class {sourceFailure}; using the selected Background Recolor Basis."
+            };
+        }
+
+        return Fallback(item, "armor class or default front plate");
     }
+
+    private static string ProtectiveTypeLabel(ProtectiveItemType type) => type switch
+    {
+        ProtectiveItemType.FaceCover => "Armored Mask",
+        ProtectiveItemType.Visor => "Face Shield",
+        ProtectiveItemType.ArmorPlate => "Standalone Armor Plate",
+        ProtectiveItemType.ArmoredEquipment => "Protective Attachment",
+        _ => "Protective Item"
+    };
 
     private RecolorResult ClassifyCapacity(RecolorItem item, double[] bounds, string field)
     {

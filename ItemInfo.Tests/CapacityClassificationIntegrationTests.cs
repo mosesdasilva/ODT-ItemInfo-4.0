@@ -95,7 +95,7 @@ public class CapacityClassificationIntegrationTests
 
         Assert.Equal(RecolorTier.Rare, result.Tier);
         Assert.Equal(RecolorContextualLabelKind.BackgroundBasis, result.ContextualLabelKind);
-        Assert.Null(result.Warning);
+        Assert.Contains("selected Background Recolor Basis", result.Warning);
     }
 
     private static RecolorItem ToRecolorItem(CapacityItemFixture item) =>
@@ -127,6 +127,7 @@ public class CapacityClassificationIntegrationTests
         "\"tiers\":{\"colors\":[\"default\",\"green\",\"blue\",\"violet\",\"orange\",\"red\"],\"traderBuyValuePerSlotCutoffs\":[10000,15000,20000,40000,60000]}," +
         "\"specializedClassifiers\":{" +
         "\"ammunition\":{\"enabled\":true,\"penetrationCutoffs\":[20,30,40,50,60]}," +
+        "\"protectiveItems\":{\"enabled\":true}," +
         "\"unarmoredRigs\":{\"enabled\":" + rigEnabled.ToString().ToLowerInvariant() +
         ",\"capacityCutoffs\":[" + string.Join(',', rigCutoffs) + "]}," +
         "\"backpacks\":{\"enabled\":" + backpackEnabled.ToString().ToLowerInvariant() +

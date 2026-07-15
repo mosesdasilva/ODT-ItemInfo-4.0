@@ -292,6 +292,10 @@ public class ItemInfo(
 	    StringBuilder addToName = new StringBuilder();
 	    StringBuilder addToShortName = new StringBuilder();
 	    var staticRecolorPass = new StaticRecolorPass(Config.ModRarityRecolor);
+	    var parentByItemId = Items.ToDictionary(
+		    entry => entry.Key.ToString(),
+		    entry => entry.Value.Parent.ToString(),
+		    StringComparer.Ordinal);
 	    
 	    foreach (KeyValuePair<MongoId, TemplateItem> kvp in Items)
 	    {
@@ -782,7 +786,7 @@ public class ItemInfo(
 		    if (Config.ModRarityRecolor.Enabled &&
 		        !Config.ModRarityRecolor.Blacklist.Contains(templateItem.Parent.ToString()) &&
 		        !Config.ModRarityRecolor.Blacklist.Contains(itemId.ToString()))
-		    {
+			    {
 				    bool isAmmo = itemHelper.IsOfBaseclass(itemId, BaseClasses.AMMO);
 				    bool isArmor = itemHelper.IsOfBaseclass(itemId, BaseClasses.ARMOR);
 				    bool isRig = itemHelper.IsOfBaseclass(itemId, BaseClasses.VEST);
@@ -791,17 +795,25 @@ public class ItemInfo(
 				    var hasDefaultArmorData = isRig && defaultPreset?.Items.Any(item =>
 					    Items.TryGetValue(item.Template, out var armorTemplate) &&
 					    armorTemplate.Properties?.ArmorClass is >= 1 and <= 6) == true;
-				    var kind = isAmmo ? RecolorItemKind.Ammo
-					    : isArmor ? RecolorItemKind.Armor
-					    : isRig ? RecolorItemKind.Rig
-					    : isBackpack ? RecolorItemKind.Backpack
-					    : RecolorItemKind.Normal;
 				    var containerGrids = itemProperties.Grids?
 					    .Select(grid => new ContainerGridTemplate(grid.Properties?.CellsH, grid.Properties?.CellsV))
 					    .ToList();
 				    var grids = containerGrids?
 					    .Select(grid => (grid.CellsH ?? 0, grid.CellsV ?? 0))
 					    .ToList();
+				    var protectiveItem = ProtectiveItemAdapter.Create(
+					    new(
+						    itemId,
+						    Utils.GetItemName(itemId, UserLocale),
+						    templateItem.Parent,
+						    itemProperties.ArmorClass,
+						    grids,
+						    hasDefaultArmorData),
+					    id => parentByItemId.TryGetValue(id, out var parentId) ? parentId : null,
+					    traderTierRarity);
+				    var kind = isAmmo ? RecolorItemKind.Ammo
+					    : isBackpack ? RecolorItemKind.Backpack
+					    : protectiveItem.Kind;
 				    Config.ModRarityRecolor.CustomOverrides.TryGetValue(itemId.ToString(), out int customRarity);
 				    int? defaultFrontPlateClass = null;
 				    if (kind is RecolorItemKind.Armor or RecolorItemKind.ArmoredRig)
@@ -833,19 +845,18 @@ public class ItemInfo(
 							    itemProperties.Height,
 							    containerGrids,
 							    hasDefaultArmorData))
-					    : new RecolorItem(
-						    itemId,
-						    templateItem.Parent,
-						    kind,
-						    traderTierRarity,
-						    isBanned,
-						    traderPrice,
-						    itemProperties.Width,
-						    itemProperties.Height,
-						    ArmorClass: itemProperties.ArmorClass,
-						    SoftArmorClass: itemProperties.ArmorClass,
-						    DefaultFrontPlateClass: defaultFrontPlateClass,
-						    DirectGrids: grids);
+					    : protectiveItem with
+					    {
+						    Kind = kind,
+						    FleaBanned = isBanned,
+						    BestTraderBuyValue = traderPrice,
+						    Width = itemProperties.Width,
+						    Height = itemProperties.Height,
+						    Penetration = itemProperties.PenetrationPower,
+						    SoftArmorClass = itemProperties.ArmorClass,
+						    DefaultFrontPlateClass = defaultFrontPlateClass,
+						    DirectGrids = grids
+					    };
 				    staticRecolorPass.Apply(
 					    new StaticRecolorRequest(
 						    recolorItem,

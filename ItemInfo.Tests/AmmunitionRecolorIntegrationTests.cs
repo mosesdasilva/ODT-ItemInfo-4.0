@@ -144,6 +144,7 @@ public class AmmunitionRecolorIntegrationTests
         "\"tiers\":{\"colors\":[\"default\",\"green\",\"blue\",\"violet\",\"orange\",\"red\"],\"traderBuyValuePerSlotCutoffs\":[10000,15000,20000,40000,60000]}," +
         "\"specializedClassifiers\":{\"ammunition\":{\"enabled\":" + ammunitionEnabled.ToString().ToLowerInvariant() +
         ",\"penetrationCutoffs\":[" + string.Join(',', penetrationCutoffs ?? [20, 30, 40, 50, 60]) + "]}," +
+        "\"protectiveItems\":{\"enabled\":true}," +
         "\"unarmoredRigs\":{\"enabled\":true,\"capacityCutoffs\":[8,12,16,20,24]}," +
         "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]}}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";

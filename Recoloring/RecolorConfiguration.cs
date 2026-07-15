@@ -10,8 +10,11 @@ public sealed record AmmunitionClassifierConfiguration(bool Enabled, double[] Pe
 
 public sealed record CapacityClassifierConfiguration(bool Enabled, double[] CapacityCutoffs);
 
+public sealed record ToggleClassifierConfiguration(bool Enabled);
+
 public sealed record SpecializedClassifierConfiguration(
     AmmunitionClassifierConfiguration Ammunition,
+    ToggleClassifierConfiguration ProtectiveItems,
     CapacityClassifierConfiguration UnarmoredRigs,
     CapacityClassifierConfiguration Backpacks);
 
@@ -47,6 +50,7 @@ public sealed record RecolorConfiguration(
         [.. DefaultCutoffs],
         new(
             new(true, [20, 30, 40, 50, 60]),
+            new(true),
             new(true, [8, 12, 16, 20, 24]),
             new(true, [12, 20, 25, 30, 40])),
         new Dictionary<string, int>(),
@@ -169,6 +173,7 @@ public sealed record RecolorConfiguration(
 
         return new(
             ReadAmmunitionClassifier(section, warn),
+            ReadProtectiveItemClassifier(section, warn),
             ReadCapacityClassifier(section, "unarmoredRigs", Defaults.SpecializedClassifiers.UnarmoredRigs, warn),
             ReadCapacityClassifier(section, "backpacks", Defaults.SpecializedClassifiers.Backpacks, warn));
     }
@@ -222,6 +227,26 @@ public sealed record RecolorConfiguration(
     {
         warn($"[ItemInfo] Invalid or missing {path}.capacityCutoffs; using built-in defaults for this classifier.");
         return [.. defaults.CapacityCutoffs];
+    }
+
+    private static ToggleClassifierConfiguration ReadProtectiveItemClassifier(
+        JsonElement specializedClassifiers,
+        Action<string> warn)
+    {
+        const string path = "RarityRecolor.specializedClassifiers.protectiveItems";
+        if (!specializedClassifiers.TryGetProperty("protectiveItems", out var protectiveItems) ||
+            protectiveItems.ValueKind != JsonValueKind.Object)
+        {
+            warn($"[ItemInfo] Invalid {path} section; using built-in defaults for this classifier.");
+            return Defaults.SpecializedClassifiers.ProtectiveItems;
+        }
+
+        return new(ReadBoolean(
+            protectiveItems,
+            "enabled",
+            Defaults.SpecializedClassifiers.ProtectiveItems.Enabled,
+            warn,
+            $"{path}.enabled"));
     }
 
     private static double[] InvalidCutoffs(Action<string> warn)

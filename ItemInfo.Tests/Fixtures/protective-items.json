@@ -1,0 +1,21 @@
+{
+  "templates": [
+    { "id": "5448e5284bdc2dcb718b4567", "name": "Vest base", "parentId": "root" },
+    { "id": "5448e54d4bdc2dcc718b4568", "name": "Armor base", "parentId": "root" },
+    { "id": "5a341c4086f77401f2541505", "name": "Headwear base", "parentId": "57bef4c42459772e8d35a53b" },
+    { "id": "57bef4c42459772e8d35a53b", "name": "Armored equipment base", "parentId": "root" },
+    { "id": "644120aa86ffbe10ee032b6f", "name": "Armor plate base", "parentId": "57bef4c42459772e8d35a53b" },
+    { "id": "5a341c4686f77469e155819e", "name": "Face cover base", "parentId": "57bef4c42459772e8d35a53b" },
+    { "id": "5448e5724bdc2ddf718b4568", "name": "Visor base", "parentId": "57bef4c42459772e8d35a53b" },
+    { "id": "fixture-modded-plate-parent", "name": "Modded plate parent", "parentId": "644120aa86ffbe10ee032b6f" },
+    { "id": "64afc71497cf3a403c01ff38", "name": "Granit Br5 plate", "parentId": "644120aa86ffbe10ee032b6f", "armorClass": 6 },
+    { "id": "fixture-body-armor-descendant", "name": "Body armor descendant", "parentId": "5448e54d4bdc2dcc718b4568" },
+    { "id": "fixture-helmet-descendant", "name": "Helmet descendant", "parentId": "5a341c4086f77401f2541505" },
+    { "id": "fixture-armored-mask", "name": "Atomic Defense mask", "parentId": "5a341c4686f77469e155819e", "armorClass": 4 },
+    { "id": "fixture-face-shield", "name": "Fixture face shield", "parentId": "5448e5724bdc2ddf718b4568", "armorClass": 3 },
+    { "id": "68a9b601863d2a71fa0494ae", "name": "Galvion Caiman applique", "parentId": "57bef4c42459772e8d35a53b", "armorClass": 4 },
+    { "id": "6943c85be2f21398e70378cc", "name": "Tac-Kek SAPI plate", "parentId": "fixture-modded-plate-parent", "armorClass": 1 },
+    { "id": "fixture-unarmored-rig", "name": "Ordinary unarmored rig", "parentId": "5448e5284bdc2dcb718b4567", "grids": [{ "cellsH": 2, "cellsV": 4 }] },
+    { "id": "fixture-broken-visor", "name": "Broken protective visor", "parentId": "5448e5724bdc2ddf718b4568", "armorClass": 0 }
+  ]
+}

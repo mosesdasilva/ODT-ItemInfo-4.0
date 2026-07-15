@@ -15,7 +15,9 @@ public sealed record RecolorItem(
     int? ArmorClass = null,
     int? SoftArmorClass = null,
     int? DefaultFrontPlateClass = null,
-    IReadOnlyList<(int Width, int Height)>? DirectGrids = null);
+    IReadOnlyList<(int Width, int Height)>? DirectGrids = null,
+    string? Name = null,
+    ProtectiveItemType? ProtectiveType = null);
 
 public sealed record AmmunitionRecolorTemplate(
     string Id,
@@ -72,7 +74,7 @@ public static class RecolorItemAdapter
                 .ToArray());
 }
 
-public enum RecolorContextualLabelKind { BackgroundBasis, PenetrationTier, CapacityTier }
+public enum RecolorContextualLabelKind { BackgroundBasis, PenetrationTier, CapacityTier, ArmorClass }
 
 public sealed record RecolorResult(
     bool Recolored,
