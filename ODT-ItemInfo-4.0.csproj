@@ -10,7 +10,7 @@
         <!-- The two lines below will set the output path for the binaries -->
         <OutputPath>bin\$(Configuration)\$(ProjectName)\$(AssemblyName)\</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <DefaultItemExcludes>$(DefaultItemExcludes);ItemInfo.Tests\**</DefaultItemExcludes>
+        <DefaultItemExcludes>$(DefaultItemExcludes);ItemInfo.Tests\**;artifacts\**</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>

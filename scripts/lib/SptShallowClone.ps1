@@ -23,11 +23,11 @@ function New-SptShallowClone {
     }
 
     $target = [IO.Path]::GetFullPath($TargetPath).TrimEnd('\')
-    if ([IO.Path]::GetPathRoot($source) -ne [IO.Path]::GetPathRoot($target)) {
-        throw "Source and target must be on the same volume so shared files can use non-admin hardlinks. Source: $source Target: $target"
-    }
     if ($target.StartsWith("$source\", [StringComparison]::OrdinalIgnoreCase)) {
         throw "Target must not be inside the source installation: $target"
+    }
+    if ($source.Equals($target, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Target must not be the source installation: $target"
     }
     if (Test-Path -LiteralPath $target) {
         throw "Target already exists; refusing to overwrite it: $target"
@@ -36,7 +36,7 @@ function New-SptShallowClone {
     $targetParent = Split-Path -Parent $target
     New-Item -ItemType Directory -Path $targetParent -Force | Out-Null
     $staging = "$target.incomplete.$([Guid]::NewGuid().ToString('N'))"
-    $createdJunctions = [Collections.Generic.List[string]]::new()
+    $createdLinks = [Collections.Generic.List[object]]::new()
 
     try {
         New-Item -ItemType Directory -Path $staging | Out-Null
@@ -51,21 +51,19 @@ function New-SptShallowClone {
         $stagingData = Join-Path $staging 'EscapeFromTarkov_Data'
         New-Item -ItemType Directory -Path $stagingData | Out-Null
 
-        Write-Host 'Creating non-admin links for shared game data...'
+        Write-Host 'Creating symbolic links for shared game data...'
         Get-ChildItem -LiteralPath $sourceData -Force |
             Where-Object Name -ne 'Managed' |
             ForEach-Object {
                 $destination = Join-Path $stagingData $_.Name
-                if ($_.PSIsContainer) {
-                    New-Item -ItemType Junction -Path $destination -Value $_.FullName | Out-Null
-                    $createdJunctions.Add($destination)
-                }
-                elseif (-not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                    New-Item -ItemType HardLink -Path $destination -Value $_.FullName | Out-Null
-                }
-                else {
+                if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) {
                     throw "Unsupported source reparse point: $($_.FullName)"
                 }
+                New-Item -ItemType SymbolicLink -Path $destination -Value $_.FullName | Out-Null
+                $createdLinks.Add([pscustomobject]@{
+                    Path = $destination
+                    IsDirectory = $_.PSIsContainer
+                })
             }
 
         Write-Host 'Copying mutable Managed assemblies...'
@@ -91,34 +89,39 @@ function New-SptShallowClone {
                     throw 'Managed must be copied, not linked.'
                 }
             }
-            elseif ($entry.PSIsContainer -and $clonedEntry.LinkType -ne 'Junction') {
-                throw "Expected a junction for shared directory '$($entry.Name)', found '$($clonedEntry.LinkType)'."
-            }
-            elseif (-not $entry.PSIsContainer -and $clonedEntry.LinkType -ne 'HardLink') {
-                throw "Expected a hardlink for shared file '$($entry.Name)', found '$($clonedEntry.LinkType)'."
+            elseif ($clonedEntry.LinkType -ne 'SymbolicLink') {
+                throw "Expected a symbolic link for shared entry '$($entry.Name)', found '$($clonedEntry.LinkType)'."
             }
         }
 
-        $symbolicLinks = @(Get-ChildItem -LiteralPath $staging -Recurse -Force | Where-Object LinkType -eq 'SymbolicLink')
-        if ($symbolicLinks.Count -ne 0) {
-            throw "Clone validation found $($symbolicLinks.Count) symbolic links."
+        $marker = [ordered]@{
+            schemaVersion = 1
+            sourcePath = $source
+            targetPath = $target
+            createdAtUtc = [DateTime]::UtcNow.ToString('o')
         }
+        $marker | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $staging '.odt-spt-test-clone.json') -Encoding UTF8
 
         Move-Item -LiteralPath $staging -Destination $target
         $copiedBytes = (Get-ChildItem -LiteralPath $target -Recurse -File -Force |
-            Where-Object LinkType -ne 'HardLink' |
+            Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |
             Measure-Object -Property Length -Sum).Sum
         Write-Host ("Shallow clone complete: {0} ({1:N2} MB physically copied)" -f $target, ($copiedBytes / 1MB))
     }
     catch {
         $originalError = $_
-        foreach ($junction in $createdJunctions) {
-            if (Test-Path -LiteralPath $junction) {
+        foreach ($link in $createdLinks) {
+            if (Test-Path -LiteralPath $link.Path) {
                 try {
-                    [IO.Directory]::Delete($junction)
+                    if ($link.IsDirectory) {
+                        [IO.Directory]::Delete($link.Path)
+                    }
+                    else {
+                        [IO.File]::Delete($link.Path)
+                    }
                 }
                 catch {
-                    Write-Warning "Could not remove incomplete junction '$junction': $($_.Exception.Message)"
+                    Write-Warning "Could not remove incomplete symbolic link '$($link.Path)': $($_.Exception.Message)"
                 }
             }
         }

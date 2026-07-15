@@ -36,8 +36,9 @@ New-SptShallowClone -SourcePath $source -TargetPath $target
 
 $copiedMutable = Join-Path $target 'SPT\user\mods\source-mod.txt'
 $copiedManaged = Join-Path $target 'EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll'
-$junction = Get-Item -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data\StreamingAssets') -Force
-$hardlink = Get-Item -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data\globalgamemanagers') -Force
+$linkedDirectory = Get-Item -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data\StreamingAssets') -Force
+$linkedFile = Get-Item -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data\globalgamemanagers') -Force
+$cloneMarker = Join-Path $target '.odt-spt-test-clone.json'
 
 if ((Get-Content -Raw -LiteralPath $copiedMutable).Trim() -ne 'mutable source content') {
     throw 'Mutable SPT content was not copied.'
@@ -45,11 +46,22 @@ if ((Get-Content -Raw -LiteralPath $copiedMutable).Trim() -ne 'mutable source co
 if ((Get-Content -Raw -LiteralPath $copiedManaged).Trim() -ne 'managed copy') {
     throw 'EscapeFromTarkov_Data\Managed was not copied.'
 }
-if ($junction.LinkType -ne 'Junction') {
-    throw "Expected a directory junction, found '$($junction.LinkType)'."
+if ($linkedDirectory.LinkType -ne 'SymbolicLink') {
+    throw "Expected a directory symbolic link, found '$($linkedDirectory.LinkType)'."
 }
-if ($hardlink.LinkType -ne 'HardLink') {
-    throw "Expected a file hardlink, found '$($hardlink.LinkType)'."
+if ($linkedFile.LinkType -ne 'SymbolicLink') {
+    throw "Expected a file symbolic link, found '$($linkedFile.LinkType)'."
+}
+if (-not (Test-Path -LiteralPath $cloneMarker -PathType Leaf)) {
+    throw 'Clone ownership marker was not created.'
+}
+
+$marker = Get-Content -Raw -LiteralPath $cloneMarker | ConvertFrom-Json
+if ($marker.sourcePath -ne (Resolve-Path -LiteralPath $source).Path) {
+    throw 'Clone ownership marker does not identify the source installation.'
+}
+if ($marker.targetPath -ne (Resolve-Path -LiteralPath $target).Path) {
+    throw 'Clone ownership marker does not identify the target installation.'
 }
 
 Set-Content -LiteralPath $copiedMutable -Value 'target-only mutable change'
@@ -61,11 +73,12 @@ if ((Get-Content -Raw -LiteralPath (Join-Path $sourceData 'Managed\Assembly-CSha
     throw 'Managed content is shared with the source installation.'
 }
 
-$symbolicLinks = @(Get-ChildItem -LiteralPath $target -Recurse -Force | Where-Object LinkType -eq 'SymbolicLink')
-if ($symbolicLinks.Count -ne 0) {
-    throw "The clone contains $($symbolicLinks.Count) symbolic links."
+$linkedDataEntries = @(Get-ChildItem -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data') -Force |
+    Where-Object Name -ne 'Managed')
+if (@($linkedDataEntries | Where-Object LinkType -ne 'SymbolicLink').Count -ne 0) {
+    throw 'Every non-Managed game-data entry must be a symbolic link.'
 }
 
-[IO.Directory]::Delete($junction.FullName)
+[IO.Directory]::Delete($linkedDirectory.FullName)
 Remove-Item -LiteralPath $testRoot -Recurse -Force
-Write-Host 'PASS: non-admin shallow clone contract satisfied.'
+Write-Host 'PASS: minimal symbolic-link shallow clone contract satisfied.'
