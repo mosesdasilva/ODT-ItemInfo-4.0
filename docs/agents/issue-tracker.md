@@ -17,3 +17,13 @@ External pull requests are not a request surface. Issues hold planned work; pull
 ## Skill publication rule
 
 When an engineering skill says to publish to the issue tracker, create a GitHub issue in this repository.
+
+## Wayfinding operations
+
+- A Wayfinder map is a GitHub issue labelled `wayfinder:map`.
+- Map tickets use exactly one type label: `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, or `wayfinder:task`.
+- Attach tickets to their map with GitHub's native sub-issue relationship.
+- Express ordering with GitHub's native issue dependency relationship; the dependent issue is "blocked by" the prerequisite issue.
+- Claim a ticket by assigning it to the developer driving the session before beginning work.
+- The frontier is the map's open, unassigned child issues that have no open `blocked by` dependencies.
+- Use the GitHub connector for supported issue operations and the `gh api` REST endpoints for native sub-issue and issue-dependency relationships.
