@@ -6,7 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <OutputType>Library</OutputType>
-        <Version>0.0.1</Version>
+        <Version>2.0.14</Version>
         <!-- The two lines below will set the output path for the binaries -->
         <OutputPath>bin\$(Configuration)\$(ProjectName)\$(AssemblyName)\</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -70,44 +70,4 @@
 
     </Target>
 
-    <!-- Copy output to staging directory -->
-    <Target Name="StagingForge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and '$(EnableForgeStaging)' == 'true'">
-
-        <!-- Build the full staging path -->
-        <PropertyGroup>
-            <StagingDir>D:\Staging Area\$(ProjectName)\SPT\user\mods\$(ProjectName)</StagingDir>
-        </PropertyGroup>
-
-        <!-- Create directory if missing -->
-        <MakeDir Directories="$(StagingDir)" Condition="!Exists('$(StagingDir)')" />
-
-        <!-- Collect DLLs -->
-        <ItemGroup>
-            <!-- Copy all DLLs produced by the build -->
-            <DllFiles Include="$(OutputPath)*.dll" />
-
-            <!-- Copy all config files from the config folder -->
-            <ConfigFolder Include="$(OutputPath)config\**\*.*" />
-        </ItemGroup>
-
-        <Message Importance="high" Text="Copying DLLs to staging: $(StagingDir)" />
-
-        <!-- Copy DLLs -->
-        <Copy
-                SourceFiles="@(DllFiles)"
-                DestinationFolder="$(StagingDir)"
-                SkipUnchangedFiles="true"
-                ContinueOnError="false" />
-
-        <!-- Copy config folder, preserving directory structure -->
-        <Copy
-                SourceFiles="@(ConfigFolder)"
-                DestinationFiles="@(ConfigFolder->'$(StagingDir)\config\%(RecursiveDir)%(Filename)%(Extension)')"
-                SkipUnchangedFiles="true"
-                ContinueOnError="false" />
-
-        <Message Importance="high" Text="Staging complete." />
-
-    </Target>
-    
 </Project>

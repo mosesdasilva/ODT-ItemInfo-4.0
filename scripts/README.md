@@ -1,5 +1,22 @@
 # SPT Test Clone smoke gate
 
+## Build a validated local release
+
+Run the complete release gate with Windows PowerShell 5.1:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Release.ps1
+```
+
+The command always restores, builds and tests Release, packages the exact
+five-file SPT layout, validates the staged and archived bytes, and atomically
+replaces `artifacts\releases\ODT-ItemInfo-4.0_<Version>.zip` only after every
+gate succeeds. `-OutputDirectory` may redirect local output; there are no
+version overrides or skip switches.
+
+Hexadecimal background colors require Color Converter API 1.1.1 or newer on
+every client. That external client dependency is not bundled in the server ZIP.
+
 The repository keeps one persistent, Git-ignored SPT Test Clone at
 `artifacts\spt-test-clone`. Provisioning is occasional; reset, build, install,
 start, readiness detection, stop, and reporting happen on every smoke run.
