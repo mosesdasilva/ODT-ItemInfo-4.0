@@ -46,6 +46,12 @@ public class WeaponRecolorModeIntegrationTests
         Assert.Equal(BackgroundRecolorBasis.TraderBuyValue, configuration.Basis);
         Assert.False(configuration.SpecializedClassifiers.Ammunition.Enabled);
         Assert.Single(warnings, warning => warning.Contains("specializedClassifiers.weapons.mode"));
+
+        var visible = Apply(configuration, RecolorItemAdapter.FromWeapon(LoadFixture().Weapon));
+
+        Assert.Equal(RecolorTier.Uber, visible.Tier);
+        Assert.Equal("orange", visible.Background);
+        Assert.Equal("Value Tier 5", Assert.IsType<RecolorPresentation>(visible.Presentation).ContextualLabel);
     }
 
     [Theory]
