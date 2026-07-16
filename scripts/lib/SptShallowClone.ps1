@@ -51,7 +51,7 @@ function New-SptShallowClone {
         $stagingData = Join-Path $staging 'EscapeFromTarkov_Data'
         New-Item -ItemType Directory -Path $stagingData | Out-Null
 
-        Write-Host 'Creating symbolic links for shared game data...'
+        Write-Host 'Sharing immutable game data without administrator privileges...'
         Get-ChildItem -LiteralPath $sourceData -Force |
             Where-Object Name -ne 'Managed' |
             ForEach-Object {
@@ -59,11 +59,23 @@ function New-SptShallowClone {
                 if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) {
                     throw "Unsupported source reparse point: $($_.FullName)"
                 }
-                New-Item -ItemType SymbolicLink -Path $destination -Value $_.FullName | Out-Null
-                $createdLinks.Add([pscustomobject]@{
-                    Path = $destination
-                    IsDirectory = $_.PSIsContainer
-                })
+                if ($_.PSIsContainer) {
+                    New-Item -ItemType Junction -Path $destination -Value $_.FullName | Out-Null
+                    $createdLinks.Add([pscustomobject]@{
+                        Path = $destination
+                        IsDirectory = $true
+                    })
+                }
+                elseif ([IO.Path]::GetPathRoot($_.FullName).Equals([IO.Path]::GetPathRoot($destination), [StringComparison]::OrdinalIgnoreCase)) {
+                    New-Item -ItemType HardLink -Path $destination -Value $_.FullName | Out-Null
+                    $createdLinks.Add([pscustomobject]@{
+                        Path = $destination
+                        IsDirectory = $false
+                    })
+                }
+                else {
+                    Copy-Item -LiteralPath $_.FullName -Destination $destination -Force
+                }
             }
 
         Write-Host 'Copying mutable Managed assemblies...'
@@ -89,8 +101,26 @@ function New-SptShallowClone {
                     throw 'Managed must be copied, not linked.'
                 }
             }
-            elseif ($clonedEntry.LinkType -ne 'SymbolicLink') {
-                throw "Expected a symbolic link for shared entry '$($entry.Name)', found '$($clonedEntry.LinkType)'."
+            elseif ($entry.PSIsContainer -and $clonedEntry.LinkType -ne 'Junction') {
+                throw "Expected a directory junction for shared entry '$($entry.Name)', found '$($clonedEntry.LinkType)'."
+            }
+            elseif (-not $entry.PSIsContainer) {
+                $sameVolume = [IO.Path]::GetPathRoot($entry.FullName).Equals(
+                    [IO.Path]::GetPathRoot($clonedEntry.FullName),
+                    [StringComparison]::OrdinalIgnoreCase
+                )
+                if ($sameVolume -and $clonedEntry.LinkType -ne 'HardLink') {
+                    throw "Expected a file hard link for same-volume shared entry '$($entry.Name)', found '$($clonedEntry.LinkType)'."
+                }
+                if (-not $sameVolume) {
+                    if ($clonedEntry.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                        throw "Expected a copied cross-volume shared file for '$($entry.Name)', found a reparse point."
+                    }
+                    if ((Get-FileHash -LiteralPath $entry.FullName -Algorithm SHA256).Hash -ne
+                        (Get-FileHash -LiteralPath $clonedEntry.FullName -Algorithm SHA256).Hash) {
+                        throw "Copied cross-volume shared file differs from its source: $($entry.Name)"
+                    }
+                }
             }
         }
 
@@ -104,7 +134,9 @@ function New-SptShallowClone {
 
         Move-Item -LiteralPath $staging -Destination $target
         $copiedBytes = (Get-ChildItem -LiteralPath $target -Recurse -File -Force |
-            Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |
+            Where-Object {
+                -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and $_.LinkType -ne 'HardLink'
+            } |
             Measure-Object -Property Length -Sum).Sum
         Write-Host ("Shallow clone complete: {0} ({1:N2} MB physically copied)" -f $target, ($copiedBytes / 1MB))
     }
@@ -121,7 +153,7 @@ function New-SptShallowClone {
                     }
                 }
                 catch {
-                    Write-Warning "Could not remove incomplete symbolic link '$($link.Path)': $($_.Exception.Message)"
+                    Write-Warning "Could not remove incomplete shared link '$($link.Path)': $($_.Exception.Message)"
                 }
             }
         }

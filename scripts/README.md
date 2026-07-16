@@ -23,20 +23,22 @@ start, readiness detection, stop, and reporting happen on every smoke run.
 
 ## Provision the clone
 
-Run provisioning from an Administrator Windows PowerShell 5.1 window:
+Run provisioning from an ordinary Windows PowerShell 5.1 window:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\New-SptShallowClone.ps1
 ```
 
 Use `-SourcePath` when SPT 4.0.13 is installed elsewhere. Provisioning copies
-mutable SPT content and `EscapeFromTarkov_Data\Managed`, then creates symbolic
-links for every other game-data entry. The ownership marker records source and
-target paths so the smoke gate cannot resolve back to the everyday installation.
+mutable SPT content and `EscapeFromTarkov_Data\Managed`, creates directory
+junctions for shared immutable game-data directories, and hard-links loose
+immutable files when source and target share a volume. Cross-volume loose files
+are copied. The ownership marker records source and target paths so the smoke
+gate cannot resolve back to the everyday installation.
 
-The symbolic-link layout keeps the clone's visible size near the genuinely
-copied content (roughly one gigabyte for the current local installation) rather
-than reporting the linked game data as another 25 GB.
+The junction and hard-link layout keeps the clone's visible size near the
+genuinely copied content (roughly one gigabyte for the current local
+installation) rather than reporting the shared game data as another 25 GB.
 
 ## Run the smoke gate
 
@@ -67,8 +69,8 @@ Use `-ServerPort` when another isolated test instance already owns port `6970`.
 
 ## Regression tests
 
-Provisioning tests require an Administrator shell because they create symbolic
-links. The smoke and build regressions do not.
+Provisioning, smoke, and build regressions all run from an ordinary Windows
+PowerShell 5.1 shell.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\Test-NewSptShallowClone.ps1

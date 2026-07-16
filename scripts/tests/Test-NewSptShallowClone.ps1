@@ -46,11 +46,11 @@ if ((Get-Content -Raw -LiteralPath $copiedMutable).Trim() -ne 'mutable source co
 if ((Get-Content -Raw -LiteralPath $copiedManaged).Trim() -ne 'managed copy') {
     throw 'EscapeFromTarkov_Data\Managed was not copied.'
 }
-if ($linkedDirectory.LinkType -ne 'SymbolicLink') {
-    throw "Expected a directory symbolic link, found '$($linkedDirectory.LinkType)'."
+if ($linkedDirectory.LinkType -ne 'Junction') {
+    throw "Expected a directory junction, found '$($linkedDirectory.LinkType)'."
 }
-if ($linkedFile.LinkType -ne 'SymbolicLink') {
-    throw "Expected a file symbolic link, found '$($linkedFile.LinkType)'."
+if ($linkedFile.LinkType -ne 'HardLink') {
+    throw "Expected a same-volume file hard link, found '$($linkedFile.LinkType)'."
 }
 if (-not (Test-Path -LiteralPath $cloneMarker -PathType Leaf)) {
     throw 'Clone ownership marker was not created.'
@@ -73,12 +73,16 @@ if ((Get-Content -Raw -LiteralPath (Join-Path $sourceData 'Managed\Assembly-CSha
     throw 'Managed content is shared with the source installation.'
 }
 
-$linkedDataEntries = @(Get-ChildItem -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data') -Force |
+$sharedDataEntries = @(Get-ChildItem -LiteralPath (Join-Path $target 'EscapeFromTarkov_Data') -Force |
     Where-Object Name -ne 'Managed')
-if (@($linkedDataEntries | Where-Object LinkType -ne 'SymbolicLink').Count -ne 0) {
-    throw 'Every non-Managed game-data entry must be a symbolic link.'
+foreach ($entry in $sharedDataEntries) {
+    $expectedLinkType = if ($entry.PSIsContainer) { 'Junction' } else { 'HardLink' }
+    if ($entry.LinkType -ne $expectedLinkType) {
+        throw "Expected shared entry '$($entry.Name)' to use '$expectedLinkType', found '$($entry.LinkType)'."
+    }
 }
 
 [IO.Directory]::Delete($linkedDirectory.FullName)
+[IO.File]::Delete($linkedFile.FullName)
 Remove-Item -LiteralPath $testRoot -Recurse -Force
-Write-Host 'PASS: minimal symbolic-link shallow clone contract satisfied.'
+Write-Host 'PASS: non-admin shallow clone contract satisfied with isolated mutable data and shared immutable data.'
