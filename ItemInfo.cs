@@ -793,9 +793,27 @@ public class ItemInfo(
 				    bool isBackpack = itemHelper.IsOfBaseclass(itemId, BaseClasses.BACKPACK);
 				    bool isWeapon = itemHelper.IsOfBaseclass(itemId, BaseClasses.WEAPON);
 				    var defaultPreset = isArmor || isRig ? presetHelper.GetDefaultPreset(itemId) : null;
-				    var hasDefaultArmorData = isRig && defaultPreset?.Items.Any(item =>
-					    Items.TryGetValue(item.Template, out var armorTemplate) &&
-					    armorTemplate.Properties?.ArmorClass is >= 1 and <= 6) == true;
+				    var defaultPresetRoot = defaultPreset?.Items.FirstOrDefault(item =>
+					    item.Template == itemId && string.IsNullOrEmpty(item.ParentId));
+				    var defaultPresetComponents = defaultPresetRoot is null
+					    ? null
+					    : defaultPreset!.Items
+						    .Where(item => item.ParentId == defaultPresetRoot.Id.ToString())
+						    .Select(item => new ProtectiveArmorComponentData(
+							    item.SlotId ?? string.Empty,
+							    Items.TryGetValue(item.Template, out var componentTemplate)
+								    ? componentTemplate.Properties?.ArmorClass
+								    : null))
+						    .ToList();
+				    var rootSlotDefaults = itemProperties.Slots?
+					    .SelectMany(slot => slot.Properties?.Filters?
+						    .Where(filter => filter.Plate is not null)
+						    .Select(filter => new ProtectiveArmorComponentData(
+							    slot.Name ?? slot.Id ?? string.Empty,
+							    filter.Plate is { } plateId && Items.TryGetValue(plateId, out var plateTemplate)
+								    ? plateTemplate.Properties?.ArmorClass
+							    : null)) ?? Enumerable.Empty<ProtectiveArmorComponentData>())
+					    .ToList();
 				    var containerGrids = itemProperties.Grids?
 					    .Select(grid => new ContainerGridTemplate(grid.Properties?.CellsH, grid.Properties?.CellsV))
 					    .ToList();
@@ -809,7 +827,8 @@ public class ItemInfo(
 						    templateItem.Parent,
 						    itemProperties.ArmorClass,
 						    grids,
-						    hasDefaultArmorData),
+						    DefaultPresetComponents: defaultPresetComponents,
+						    RootSlotDefaults: rootSlotDefaults),
 					    id => parentByItemId.TryGetValue(id, out var parentId) ? parentId : null,
 					    traderTierRarity);
 				    var kind = isAmmo ? RecolorItemKind.Ammo
@@ -817,14 +836,6 @@ public class ItemInfo(
 					    : isWeapon ? RecolorItemKind.Weapon
 					    : protectiveItem.Kind;
 				    Config.ModRarityRecolor.CustomOverrides.TryGetValue(itemId.ToString(), out int customRarity);
-				    int? defaultFrontPlateClass = null;
-				    if (kind is RecolorItemKind.Armor or RecolorItemKind.ArmoredRig)
-				    {
-					    var frontPlate = defaultPreset?.Items.FirstOrDefault(item =>
-						    item.SlotId is "mod_slot_plate_front" or "front_plate");
-					    if (frontPlate is not null && Items.TryGetValue(frontPlate.Template, out var frontPlateTemplate))
-						    defaultFrontPlateClass = frontPlateTemplate.Properties?.ArmorClass;
-				    }
 				    var recolorItem = isAmmo
 					    ? RecolorItemAdapter.FromAmmunition(new(
 						    itemId.ToString(),
@@ -857,7 +868,7 @@ public class ItemInfo(
 							    itemProperties.Width,
 							    itemProperties.Height,
 							    containerGrids,
-							    hasDefaultArmorData))
+							    false))
 					    : protectiveItem with
 					    {
 						    Kind = kind,
@@ -866,8 +877,6 @@ public class ItemInfo(
 						    Width = itemProperties.Width,
 						    Height = itemProperties.Height,
 						    Penetration = itemProperties.PenetrationPower,
-						    SoftArmorClass = itemProperties.ArmorClass,
-						    DefaultFrontPlateClass = defaultFrontPlateClass,
 						    DirectGrids = grids
 					    };
 				    staticRecolorPass.Apply(

@@ -35,7 +35,8 @@ public sealed record RecolorItem(
     string? Name = null,
     ProtectiveItemType? ProtectiveType = null,
     WeaponCategory? WeaponCategory = null,
-    string? WeaponClass = null);
+    string? WeaponClass = null,
+    int? RootSlotDefaultFrontPlateClass = null);
 
 public sealed record AmmunitionRecolorTemplate(
     string Id,

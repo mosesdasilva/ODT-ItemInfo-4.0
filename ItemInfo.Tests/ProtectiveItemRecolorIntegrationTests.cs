@@ -45,7 +45,98 @@ public class ProtectiveItemRecolorIntegrationTests
     }
 
     [Fact]
-    public void Ordinary_unarmored_rig_remains_a_rig_without_a_protective_warning()
+    public void Built_in_modular_armor_uses_the_default_front_plate_across_real_slot_casing()
+    {
+        var fixture = LoadFixture();
+        var item = fixture.CreateRecolorItem("545cdb794bdc2d3a198b456a");
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run([new(item, _ => { })], warnings.Add));
+
+        Assert.Equal(RecolorItemKind.Armor, item.Kind);
+        Assert.Equal((RecolorTier)6, result.Tier);
+        Assert.Equal(RecolorContextualLabelKind.ArmorClass, result.ContextualLabelKind);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void First_valid_modular_source_skips_invalid_preset_then_uses_root_slot_front_plate()
+    {
+        var item = LoadFixture().CreateRecolorItem("fixture-root-slot-fallback");
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run([new(item, _ => { })], warnings.Add));
+
+        Assert.Equal((RecolorTier)5, result.Tier);
+        Assert.Equal(RecolorContextualLabelKind.ArmorClass, result.ContextualLabelKind);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Modular_armor_without_a_preset_uses_its_root_slot_default_front_plate()
+    {
+        var item = LoadFixture().CreateRecolorItem("674d91ce6e862d5a95059ed6");
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run([new(item, _ => { })], warnings.Add));
+
+        Assert.Equal((RecolorTier)5, result.Tier);
+        Assert.Equal(RecolorContextualLabelKind.ArmorClass, result.ContextualLabelKind);
+        Assert.Empty(warnings);
+    }
+
+    [Theory]
+    [InlineData("5648a7494bdc2d9d488b4583", 2)]
+    [InlineData("fixture-modded-soft-armor", 3)]
+    public void Soft_only_built_in_and_modded_armor_use_the_soft_armor_fallback_class(
+        string itemId,
+        int expectedTierNumber)
+    {
+        var item = LoadFixture().CreateRecolorItem(itemId);
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run([new(item, _ => { })], warnings.Add));
+
+        Assert.Equal((RecolorTier)expectedTierNumber, result.Tier);
+        Assert.Equal(RecolorContextualLabelKind.ArmorClass, result.ContextualLabelKind);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Rig_with_valid_default_armor_data_is_armored_and_armor_class_wins_over_capacity()
+    {
+        var item = LoadFixture().CreateRecolorItem("fixture-modded-armored-rig");
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run([new(item, _ => { })], warnings.Add));
+
+        Assert.Equal(RecolorItemKind.ArmoredRig, item.Kind);
+        Assert.Equal((RecolorTier)4, result.Tier);
+        Assert.Equal(RecolorContextualLabelKind.ArmorClass, result.ContextualLabelKind);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Exhausted_modular_sources_warn_once_with_each_failure_then_use_the_selected_basis()
+    {
+        var item = LoadFixture().CreateRecolorItem("fixture-exhausted-modular-armor");
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run([new(item, _ => { })], warnings.Add));
+
+        Assert.Equal((RecolorTier)2, result.Tier);
+        var warning = Assert.Single(warnings);
+        Assert.Contains("Broken modular armor", warning);
+        Assert.Contains("fixture-exhausted-modular-armor", warning);
+        Assert.Contains("Body Armor", warning);
+        Assert.Contains("Default Front Plate Class was 0, outside 1 through 6", warning);
+        Assert.Contains("Root-Slot Default Front Plate Class was 7, outside 1 through 6", warning);
+        Assert.Contains("Soft-Armor Fallback Class was 9, outside 1 through 6", warning);
+        Assert.Contains("selected Background Recolor Basis", warning);
+    }
+
+    [Fact]
+    public void Rig_without_default_armor_data_remains_a_rig_even_when_its_root_class_is_valid()
     {
         var fixture = LoadFixture();
         var item = fixture.CreateRecolorItem("fixture-unarmored-rig");
@@ -164,12 +255,24 @@ public class ProtectiveItemRecolorIntegrationTests
             var template = templates[itemId];
             return ProtectiveItemAdapter.Create(
                 new(template.Id, template.Name, template.ParentId, template.ArmorClass,
-                    template.Grids?.Select(grid => (grid.CellsH, grid.CellsV)).ToArray()),
+                    template.Grids?.Select(grid => (grid.CellsH, grid.CellsV)).ToArray(),
+                    DefaultPresetComponents: template.DefaultPresetComponents?.Select(component =>
+                        new ProtectiveArmorComponentData(component.SlotId, component.ArmorClass)).ToArray(),
+                    RootSlotDefaults: template.RootSlotDefaults?.Select(component =>
+                        new ProtectiveArmorComponentData(component.SlotId, component.ArmorClass)).ToArray()),
                 id => templates.TryGetValue(id, out var parent) ? parent.ParentId : null,
                 traderTier: 2);
         }
     }
 
-    private sealed record ProtectiveTemplateFixture(string Id, string Name, string ParentId, int? ArmorClass, ProtectiveGridFixture[]? Grids);
+    private sealed record ProtectiveTemplateFixture(
+        string Id,
+        string Name,
+        string ParentId,
+        int? ArmorClass,
+        ProtectiveGridFixture[]? Grids,
+        ProtectiveArmorComponentFixture[]? DefaultPresetComponents,
+        ProtectiveArmorComponentFixture[]? RootSlotDefaults);
     private sealed record ProtectiveGridFixture(int CellsH, int CellsV);
+    private sealed record ProtectiveArmorComponentFixture(string SlotId, int? ArmorClass);
 }

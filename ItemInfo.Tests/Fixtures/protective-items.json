@@ -15,7 +15,83 @@
     { "id": "fixture-face-shield", "name": "Fixture face shield", "parentId": "5448e5724bdc2ddf718b4568", "armorClass": 3 },
     { "id": "68a9b601863d2a71fa0494ae", "name": "Galvion Caiman applique", "parentId": "57bef4c42459772e8d35a53b", "armorClass": 4 },
     { "id": "6943c85be2f21398e70378cc", "name": "Tac-Kek SAPI plate", "parentId": "fixture-modded-plate-parent", "armorClass": 1 },
-    { "id": "fixture-unarmored-rig", "name": "Ordinary unarmored rig", "parentId": "5448e5284bdc2dcb718b4567", "grids": [{ "cellsH": 2, "cellsV": 4 }] },
-    { "id": "fixture-broken-visor", "name": "Broken protective visor", "parentId": "5448e5724bdc2ddf718b4568", "armorClass": 0 }
+    { "id": "fixture-unarmored-rig", "name": "Ordinary unarmored rig", "parentId": "5448e5284bdc2dcb718b4567", "armorClass": 4, "grids": [{ "cellsH": 2, "cellsV": 4 }] },
+    { "id": "fixture-broken-visor", "name": "Broken protective visor", "parentId": "5448e5724bdc2ddf718b4568", "armorClass": 0 },
+    {
+      "id": "545cdb794bdc2d3a198b456a",
+      "name": "6B43 Zabralo-Sh body armor",
+      "parentId": "5448e54d4bdc2dcc718b4568",
+      "armorClass": 0,
+      "defaultPresetComponents": [
+        { "slotId": "Front_plate", "armorClass": 6 },
+        { "slotId": "Back_plate", "armorClass": 6 }
+      ]
+    },
+    {
+      "id": "fixture-root-slot-fallback",
+      "name": "No-preset modular armor",
+      "parentId": "5448e54d4bdc2dcc718b4568",
+      "armorClass": 0,
+      "defaultPresetComponents": [
+        { "slotId": "front_plate", "armorClass": 0 },
+        { "slotId": "back_plate", "armorClass": 6 }
+      ],
+      "rootSlotDefaults": [
+        { "slotId": "Front_plate", "armorClass": 5 },
+        { "slotId": "Soft_armor_front", "armorClass": 3 },
+        { "slotId": "side_plate", "armorClass": 6 }
+      ]
+    },
+    {
+      "id": "674d91ce6e862d5a95059ed6",
+      "name": "6B13 M assault armor Christmas Edition",
+      "parentId": "5448e54d4bdc2dcc718b4568",
+      "armorClass": 0,
+      "rootSlotDefaults": [
+        { "slotId": "Front_plate", "armorClass": 5 },
+        { "slotId": "Soft_armor_front", "armorClass": 3 }
+      ]
+    },
+    {
+      "id": "5648a7494bdc2d9d488b4583",
+      "name": "PACA Soft Armor",
+      "parentId": "5448e54d4bdc2dcc718b4568",
+      "armorClass": 0,
+      "defaultPresetComponents": [
+        { "slotId": "Soft_armor_front", "armorClass": 2 }
+      ]
+    },
+    {
+      "id": "fixture-modded-soft-armor",
+      "name": "Modded soft armor",
+      "parentId": "fixture-body-armor-descendant",
+      "armorClass": 0,
+      "rootSlotDefaults": [
+        { "slotId": "soft_armor_front", "armorClass": 3 }
+      ]
+    },
+    {
+      "id": "fixture-modded-armored-rig",
+      "name": "Modded armored rig",
+      "parentId": "5448e5284bdc2dcb718b4567",
+      "armorClass": 0,
+      "grids": [{ "cellsH": 10, "cellsV": 10 }],
+      "defaultPresetComponents": [
+        { "slotId": "Front_plate", "armorClass": 4 }
+      ]
+    },
+    {
+      "id": "fixture-exhausted-modular-armor",
+      "name": "Broken modular armor",
+      "parentId": "5448e54d4bdc2dcc718b4568",
+      "armorClass": 0,
+      "defaultPresetComponents": [
+        { "slotId": "front_plate", "armorClass": 0 },
+        { "slotId": "soft_armor_front", "armorClass": 9 }
+      ],
+      "rootSlotDefaults": [
+        { "slotId": "Front_plate", "armorClass": 7 }
+      ]
+    }
   ]
 }

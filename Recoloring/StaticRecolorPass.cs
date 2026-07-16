@@ -169,24 +169,35 @@ public sealed class StaticRecolorPass
 
     private RecolorResult ClassifyArmor(RecolorItem item)
     {
-        var usesDirectRootArmorClass = item.ProtectiveType is not null;
+        var usesDirectRootArmorClass = item.ProtectiveType is
+            ProtectiveItemType.FaceCover or
+            ProtectiveItemType.Visor or
+            ProtectiveItemType.ArmorPlate or
+            ProtectiveItemType.ArmoredEquipment;
         var armorClass = usesDirectRootArmorClass
             ? item.ArmorClass
-            : item.DefaultFrontPlateClass ?? item.SoftArmorClass ?? item.ArmorClass;
+            : FirstValidArmorClass(
+                item.DefaultFrontPlateClass,
+                item.RootSlotDefaultFrontPlateClass,
+                item.SoftArmorClass,
+                item.ArmorClass);
         if (armorClass is >= 1 and <= 6)
             return new(true, (RecolorTier)armorClass.Value, ContextualLabelKind: RecolorContextualLabelKind.ArmorClass);
 
         if (item.ProtectiveType is not null)
         {
             var normal = ClassifyNormal(item);
-            var sourceFailure = item.ArmorClass is null
-                ? "was missing"
-                : $"was {item.ArmorClass.Value}, outside 1 through 6";
             var name = string.IsNullOrWhiteSpace(item.Name) ? "Unknown item" : item.Name;
+            var attemptedSources = usesDirectRootArmorClass
+                ? ArmorClassFailure("direct root armor class", item.ArmorClass)
+                : string.Join("; ",
+                    ArmorClassFailure("Default Front Plate Class", item.DefaultFrontPlateClass),
+                    ArmorClassFailure("Root-Slot Default Front Plate Class", item.RootSlotDefaultFrontPlateClass),
+                    ArmorClassFailure("Soft-Armor Fallback Class", item.SoftArmorClass));
             return normal with
             {
                 Warning = $"[ItemInfo] Protective Item {name} ({item.Id}) recognized as {ProtectiveTypeLabel(item.ProtectiveType.Value)}; " +
-                          $"direct root armor class {sourceFailure}; using the selected Background Recolor Basis."
+                          $"{attemptedSources}; using the selected Background Recolor Basis."
             };
         }
 
@@ -195,12 +206,23 @@ public sealed class StaticRecolorPass
 
     private static string ProtectiveTypeLabel(ProtectiveItemType type) => type switch
     {
+        ProtectiveItemType.BodyArmor => "Body Armor",
+        ProtectiveItemType.Helmet => "Helmet",
         ProtectiveItemType.FaceCover => "Armored Mask",
         ProtectiveItemType.Visor => "Face Shield",
         ProtectiveItemType.ArmorPlate => "Standalone Armor Plate",
         ProtectiveItemType.ArmoredEquipment => "Protective Attachment",
+        ProtectiveItemType.ArmoredRig => "Armored Rig",
         _ => "Protective Item"
     };
+
+    private static int? FirstValidArmorClass(params int?[] candidates) =>
+        candidates.FirstOrDefault(candidate => candidate is >= 1 and <= 6);
+
+    private static string ArmorClassFailure(string source, int? armorClass) =>
+        armorClass is null
+            ? $"{source} was missing"
+            : $"{source} was {armorClass.Value}, outside 1 through 6";
 
     private RecolorResult ClassifyCapacity(RecolorItem item, double[] bounds, string field)
     {
