@@ -39,7 +39,19 @@
 				"capacityCutoffs": [12, 20, 25, 30, 40]
 			},
 			"weapons": {
-				"mode": "Inherit"
+				"mode": "Inherit",
+				"categoryColors": {
+					"pistol": "default",
+					"revolver": "default",
+					"submachineGun": "green",
+					"shotgun": "green",
+					"assaultCarbine": "blue",
+					"assaultRifle": "blue",
+					"machineGun": "blue",
+					"marksmanRifle": "violet",
+					"sniperRifle": "orange",
+					"launcher": "red"
+				}
 			}
 		},
 		"customOverrides": {

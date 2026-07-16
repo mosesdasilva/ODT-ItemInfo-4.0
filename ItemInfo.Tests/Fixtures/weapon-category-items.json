@@ -1,0 +1,40 @@
+{
+  "parents": {
+    "custom-weapon-parent": "5422acb9af1c889c16000029",
+    "nested-modded-parent": "custom-weapon-parent",
+    "machine-gun-parent": "5447bed64bdc2d97278b4568",
+    "revolver-parent": "617f1ef5e8b54b0998387733",
+    "shotgun-parent": "5447b6094bdc2dc3278b4567",
+    "rocket-parent": "67446d4f04141c10630604e7",
+    "flare-parent": "5447bedf4bdc2d87278b4568",
+    "outside-parent": "54009119af1c881c07000029",
+    "5447bed64bdc2d97278b4568": "5422acb9af1c889c16000029",
+    "617f1ef5e8b54b0998387733": "5422acb9af1c889c16000029",
+    "5447b6094bdc2dc3278b4567": "5422acb9af1c889c16000029",
+    "67446d4f04141c10630604e7": "5422acb9af1c889c16000029",
+    "5447bedf4bdc2d87278b4568": "5422acb9af1c889c16000029"
+  },
+  "categories": [
+    { "id": "pistol", "parentId": "custom-weapon-parent", "weapClass": "pistol", "expectedCategory": "Pistol", "expectedColor": "default", "expectedLabel": "Pistol" },
+    { "id": "revolver", "parentId": "revolver-parent", "weapClass": "pistol", "expectedCategory": "Revolver", "expectedColor": "default", "expectedLabel": "Revolver" },
+    { "id": "smg", "parentId": "custom-weapon-parent", "weapClass": "smg", "expectedCategory": "SubmachineGun", "expectedColor": "green", "expectedLabel": "Submachine Gun" },
+    { "id": "shotgun", "parentId": "custom-weapon-parent", "weapClass": "shotgun", "expectedCategory": "Shotgun", "expectedColor": "green", "expectedLabel": "Shotgun" },
+    { "id": "carbine", "parentId": "custom-weapon-parent", "weapClass": "assaultCarbine", "expectedCategory": "AssaultCarbine", "expectedColor": "blue", "expectedLabel": "Assault Carbine" },
+    { "id": "rifle", "parentId": "custom-weapon-parent", "weapClass": "assaultRifle", "expectedCategory": "AssaultRifle", "expectedColor": "blue", "expectedLabel": "Assault Rifle" },
+    { "id": "machine-gun", "parentId": "custom-weapon-parent", "weapClass": "machinegun", "expectedCategory": "MachineGun", "expectedColor": "blue", "expectedLabel": "Machine Gun" },
+    { "id": "marksman", "parentId": "custom-weapon-parent", "weapClass": "marksmanRifle", "expectedCategory": "MarksmanRifle", "expectedColor": "violet", "expectedLabel": "Marksman Rifle" },
+    { "id": "sniper", "parentId": "custom-weapon-parent", "weapClass": "sniperRifle", "expectedCategory": "SniperRifle", "expectedColor": "orange", "expectedLabel": "Sniper Rifle" },
+    { "id": "launcher", "parentId": "custom-weapon-parent", "weapClass": "grenadeLauncher", "expectedCategory": "Launcher", "expectedColor": "red", "expectedLabel": "Launcher" }
+  ],
+  "conflicts": [
+    { "id": "ags-30", "parentId": "machine-gun-parent", "weapClass": "grenadeLauncher", "expectedCategory": "Launcher" },
+    { "id": "m32", "parentId": "revolver-parent", "weapClass": "grenadeLauncher", "expectedCategory": "Launcher" },
+    { "id": "mts-255", "parentId": "revolver-parent", "weapClass": "shotgun", "expectedCategory": "Shotgun" },
+    { "id": "mp-18", "parentId": "shotgun-parent", "weapClass": "marksmanRifle", "expectedCategory": "MarksmanRifle" },
+    { "id": "rshg-2", "parentId": "rocket-parent", "weapClass": "specialWeapon", "expectedCategory": "Launcher" }
+  ],
+  "modded": { "id": "modded-rifle", "parentId": "nested-modded-parent", "weapClass": "assaultRifle" },
+  "flare": { "id": "signal-pistol", "parentId": "flare-parent", "weapClass": "specialWeapon" },
+  "unknown": { "id": "unknown-weapon", "parentId": "nested-modded-parent", "weapClass": "futureWeaponClass" },
+  "outsideScope": { "id": "outside", "parentId": "outside-parent", "weapClass": "assaultRifle" }
+}

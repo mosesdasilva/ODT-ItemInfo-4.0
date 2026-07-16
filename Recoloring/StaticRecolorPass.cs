@@ -5,6 +5,7 @@ public sealed class StaticRecolorPass
     private readonly RecolorSettings settings;
     private readonly RecolorThresholds thresholds;
     private readonly IReadOnlyList<ColorSpecification>? tierColors;
+    private readonly HashSet<string> warnedUnknownWeaponIds = new(StringComparer.Ordinal);
 
     public StaticRecolorPass(
         RecolorSettings settings,
@@ -25,7 +26,8 @@ public sealed class StaticRecolorPass
                 UseArmorClassForRecolor = configuration.SpecializedClassifiers.ProtectiveItems.Enabled,
                 UseRigCapacityForRecolor = configuration.SpecializedClassifiers.UnarmoredRigs.Enabled,
                 UseBackpackCapacityForRecolor = configuration.SpecializedClassifiers.Backpacks.Enabled,
-                WeaponRecolorMode = configuration.SpecializedClassifiers.Weapons.Mode
+                WeaponRecolorMode = configuration.SpecializedClassifiers.Weapons.Mode,
+                WeaponCategoryColors = configuration.SpecializedClassifiers.Weapons.CategoryColors
             },
             new(
                 configuration.TraderBuyValuePerSlotCutoffs,
@@ -62,13 +64,28 @@ public sealed class StaticRecolorPass
 				    _ when settings.UseTraderBuyPriceForRecolor => ("Value Tier", "RecolorValueTier"),
 				    _ => ("Trader Tier", "RecolorTraderTier")
 			    };
-			    request.ApplyPresentation(new(tierColors[tierNumber - 1], $"{label} {tierNumber}", translationKey, tierNumber));
+			    var presentationOverride = result.PresentationOverride;
+			    var displayLabel = presentationOverride?.ContextualLabel ?? label;
+			    var displayTranslationKey = presentationOverride?.ContextualLabelTranslationKey ?? translationKey;
+			    var includeTierNumber = presentationOverride?.IncludeTierNumber ?? true;
+			    var contextualLabel = includeTierNumber ? $"{displayLabel} {tierNumber}" : displayLabel;
+			    request.ApplyPresentation(new(
+				    presentationOverride?.Color ?? tierColors[tierNumber - 1],
+				    contextualLabel,
+				    displayTranslationKey,
+				    includeTierNumber ? tierNumber : 0));
 		    }
 	    }
-	    if (result.Warning is not null)
+	    if (result.Warning is not null && ShouldEmitWarning(request.Item))
 		    warn(result.Warning);
 	    return result;
     }
+
+    private bool ShouldEmitWarning(RecolorItem item) =>
+        item.Kind != RecolorItemKind.Weapon ||
+        settings.WeaponRecolorMode != WeaponRecolorMode.WeaponCategory ||
+        item.WeaponCategory is not (null or WeaponCategory.Unknown) ||
+        warnedUnknownWeaponIds.Add(item.Id);
 
     public RecolorResult Classify(RecolorItem item, bool blacklisted = false, RecolorTier? custom = null)
     {
@@ -93,8 +110,62 @@ public sealed class StaticRecolorPass
         RecolorItemKind.Backpack when settings.UseBackpackCapacityForRecolor => ClassifyCapacity(item, thresholds.BackpackCapacity, "backpack capacity"),
         RecolorItemKind.Weapon when settings.WeaponRecolorMode == WeaponRecolorMode.TraderTier =>
             new(true, TraderTier(item), ContextualLabelKind: RecolorContextualLabelKind.TraderTier),
+        RecolorItemKind.Weapon when settings.WeaponRecolorMode == WeaponRecolorMode.WeaponCategory =>
+            ClassifyWeaponCategory(item),
         _ => null
     };
+
+    private RecolorResult ClassifyWeaponCategory(RecolorItem item)
+    {
+        if (item.WeaponCategory == WeaponCategory.FlareSignal)
+            return new(
+                true,
+                RecolorTier.Common,
+                PresentationOverride: new(null, "Flare / Signal Weapon", "RecolorFlareSignalWeapon"));
+        if (item.WeaponCategory is null or WeaponCategory.Unknown)
+        {
+            var normal = ClassifyNormal(item);
+            var weaponClass = string.IsNullOrWhiteSpace(item.WeaponClass) ? "missing" : $"'{item.WeaponClass}'";
+            return normal with
+            {
+                Warning = $"[ItemInfo] Weapon {item.Id} has unrecognized weapon class {weaponClass}; using the selected Background Recolor Basis."
+            };
+        }
+
+        var category = item.WeaponCategory.Value;
+        var tier = category switch
+        {
+            WeaponCategory.Pistol or WeaponCategory.Revolver => RecolorTier.Common,
+            WeaponCategory.SubmachineGun or WeaponCategory.Shotgun => RecolorTier.Rare,
+            WeaponCategory.AssaultCarbine or WeaponCategory.AssaultRifle or WeaponCategory.MachineGun => RecolorTier.Epic,
+            WeaponCategory.MarksmanRifle => RecolorTier.Legendary,
+            WeaponCategory.SniperRifle => RecolorTier.Uber,
+            WeaponCategory.Launcher => RecolorTier.Unobtainium,
+            _ => RecolorTier.Common
+        };
+        var color = settings.WeaponCategoryColors[category];
+        var label = category switch
+        {
+            WeaponCategory.Pistol => "Pistol",
+            WeaponCategory.Revolver => "Revolver",
+            WeaponCategory.SubmachineGun => "Submachine Gun",
+            WeaponCategory.Shotgun => "Shotgun",
+            WeaponCategory.AssaultCarbine => "Assault Carbine",
+            WeaponCategory.AssaultRifle => "Assault Rifle",
+            WeaponCategory.MachineGun => "Machine Gun",
+            WeaponCategory.MarksmanRifle => "Marksman Rifle",
+            WeaponCategory.SniperRifle => "Sniper Rifle",
+            WeaponCategory.Launcher => "Launcher",
+            _ => "Weapon Category"
+        };
+        var translationKey = category == WeaponCategory.Launcher
+            ? "RecolorLauncher"
+            : $"RecolorWeapon{category}";
+        return new(
+            true,
+            tier,
+            PresentationOverride: new(color, label, translationKey));
+    }
 
     private RecolorResult ClassifyArmor(RecolorItem item)
     {
@@ -198,7 +269,7 @@ public static class RecolorPresentationRenderer
     {
         var contextualLabel = translations.TryGetValue(presentation.ContextualLabelTranslationKey, out var translatedLabel) &&
                               !string.IsNullOrWhiteSpace(translatedLabel)
-            ? $"{translatedLabel} {presentation.TierNumber}"
+            ? presentation.TierNumber > 0 ? $"{translatedLabel} {presentation.TierNumber}" : translatedLabel
             : presentation.ContextualLabel;
         return $"{existingText} | {presentation.Colorize(contextualLabel)}\n\n";
     }

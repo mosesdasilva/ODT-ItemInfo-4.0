@@ -9,6 +9,8 @@ public sealed record RecolorSettings
     public bool UseRigCapacityForRecolor { get; init; } = true;
     public bool UseBackpackCapacityForRecolor { get; init; } = true;
     public WeaponRecolorMode WeaponRecolorMode { get; init; } = WeaponRecolorMode.Inherit;
+    public IReadOnlyDictionary<WeaponCategory, ColorSpecification> WeaponCategoryColors { get; init; } =
+        RecolorConfiguration.Defaults.SpecializedClassifiers.Weapons.CategoryColors;
 }
 
 public sealed record RecolorThresholds(

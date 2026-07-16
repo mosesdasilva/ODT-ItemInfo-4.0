@@ -836,14 +836,16 @@ public class ItemInfo(
 						    itemProperties.Height,
 						    itemProperties.PenetrationPower))
 					    : isWeapon
-						    ? RecolorItemAdapter.FromWeapon(new(
+						    ? WeaponRecolorItemAdapter.Create(new(
 							    itemId.ToString(),
 							    templateItem.Parent.ToString(),
+							    itemProperties.WeapClass,
 							    traderTierRarity,
 							    isBanned,
 							    traderPrice,
 							    itemProperties.Width,
-							    itemProperties.Height))
+							    itemProperties.Height),
+							    id => parentByItemId.TryGetValue(id, out var parentId) ? parentId : null)!
 					    : kind is RecolorItemKind.Rig or RecolorItemKind.Backpack
 						    ? RecolorItemAdapter.FromContainer(new(
 							    itemId.ToString(),

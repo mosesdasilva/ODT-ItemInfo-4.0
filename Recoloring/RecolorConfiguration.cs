@@ -14,7 +14,9 @@ public sealed record CapacityClassifierConfiguration(bool Enabled, double[] Capa
 
 public sealed record ToggleClassifierConfiguration(bool Enabled);
 
-public sealed record WeaponClassifierConfiguration(WeaponRecolorMode Mode);
+public sealed record WeaponClassifierConfiguration(
+    WeaponRecolorMode Mode,
+    IReadOnlyDictionary<WeaponCategory, ColorSpecification> CategoryColors);
 
 public sealed record SpecializedClassifierConfiguration(
     AmmunitionClassifierConfiguration Ammunition,
@@ -34,6 +36,20 @@ public sealed record RecolorConfiguration(
     IReadOnlyList<string> Blacklist)
 {
     private static readonly string[] DefaultColorValues = ["default", "green", "blue", "violet", "orange", "red"];
+    private static readonly IReadOnlyDictionary<WeaponCategory, string> DefaultWeaponCategoryColorValues =
+        new Dictionary<WeaponCategory, string>
+        {
+            [WeaponCategory.Pistol] = "default",
+            [WeaponCategory.Revolver] = "default",
+            [WeaponCategory.SubmachineGun] = "green",
+            [WeaponCategory.Shotgun] = "green",
+            [WeaponCategory.AssaultCarbine] = "blue",
+            [WeaponCategory.AssaultRifle] = "blue",
+            [WeaponCategory.MachineGun] = "blue",
+            [WeaponCategory.MarksmanRifle] = "violet",
+            [WeaponCategory.SniperRifle] = "orange",
+            [WeaponCategory.Launcher] = "red"
+        };
     private static readonly double[] DefaultCutoffs = [10_000, 15_000, 20_000, 40_000, 60_000];
     private static readonly HashSet<string> LegacyKeys = new(StringComparer.Ordinal)
     {
@@ -58,7 +74,11 @@ public sealed record RecolorConfiguration(
             new(true),
             new(true, [8, 12, 16, 20, 24]),
             new(true, [12, 20, 25, 30, 40]),
-            new(WeaponRecolorMode.Inherit)),
+            new(
+                WeaponRecolorMode.Inherit,
+                DefaultWeaponCategoryColorValues.ToDictionary(
+                    pair => pair.Key,
+                    pair => ColorSpecification.ParseDefault(pair.Value)))),
         new Dictionary<string, int>(),
         []);
 
@@ -270,11 +290,37 @@ public sealed record RecolorConfiguration(
             var canonicalMode = Enum.GetNames<WeaponRecolorMode>()
                 .FirstOrDefault(name => string.Equals(name, configuredMode, StringComparison.OrdinalIgnoreCase));
             if (canonicalMode is not null)
-                return new(Enum.Parse<WeaponRecolorMode>(canonicalMode));
+                return new(
+                    Enum.Parse<WeaponRecolorMode>(canonicalMode),
+                    ReadWeaponCategoryColors(weapons, warn));
         }
 
         warn($"[ItemInfo] Invalid {path}; using Inherit.");
         return Defaults.SpecializedClassifiers.Weapons;
+    }
+
+    private static IReadOnlyDictionary<WeaponCategory, ColorSpecification> ReadWeaponCategoryColors(
+        JsonElement weapons,
+        Action<string> warn)
+    {
+        if (!weapons.TryGetProperty("categoryColors", out var colors) || colors.ValueKind != JsonValueKind.Object)
+            return Defaults.SpecializedClassifiers.Weapons.CategoryColors;
+
+        var result = new Dictionary<WeaponCategory, ColorSpecification>();
+        foreach (var (category, fallback) in Defaults.SpecializedClassifiers.Weapons.CategoryColors)
+        {
+            var key = char.ToLowerInvariant(category.ToString()[0]) + category.ToString()[1..];
+            if (colors.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String &&
+                ColorSpecification.TryParse(value.GetString(), out var parsed))
+            {
+                result[category] = parsed;
+                continue;
+            }
+
+            warn($"[ItemInfo] Invalid Color Specification at RarityRecolor.specializedClassifiers.weapons.categoryColors.{key}; using built-in value {fallback.BackgroundValue} for this field.");
+            result[category] = fallback;
+        }
+        return result;
     }
 
     private static double[] InvalidCutoffs(Action<string> warn)
