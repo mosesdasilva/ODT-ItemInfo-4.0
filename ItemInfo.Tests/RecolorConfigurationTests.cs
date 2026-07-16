@@ -37,7 +37,8 @@ public class RecolorConfigurationTests
                 "ammunition":{"enabled":true,"penetrationCutoffs":[20,30,40,50,60]},
                 "protectiveItems":{"enabled":true},
                 "unarmoredRigs":{"enabled":true,"capacityCutoffs":[8,12,16,20,24]},
-                "backpacks":{"enabled":true,"capacityCutoffs":[12,20,25,30,40]}
+                "backpacks":{"enabled":true,"capacityCutoffs":[12,20,25,30,40]},
+                "weapons":{"mode":"Inherit"}
               },
               "customOverrides":{"itemIdToTier":{"fixture":4}},
               "blacklist":{"itemOrParentIds":["blocked"]}
@@ -69,7 +70,8 @@ public class RecolorConfigurationTests
                 "ammunition":{"enabled":true,"penetrationCutoffs":[20,30,40,50,60]},
                 "protectiveItems":{"enabled":true},
                 "unarmoredRigs":{"enabled":false,"capacityCutoffs":[7,11,15,19,23]},
-                "backpacks":{"enabled":true,"capacityCutoffs":[13,21,26,31,41]}
+                "backpacks":{"enabled":true,"capacityCutoffs":[13,21,26,31,41]},
+                "weapons":{"mode":"Inherit"}
               },
               "customOverrides":{"itemIdToTier":{}},
               "blacklist":{"itemOrParentIds":[]}
@@ -186,7 +188,7 @@ public class RecolorConfigurationTests
         "\"ammunition\":{\"enabled\":true,\"penetrationCutoffs\":[20,30,40,50,60]}," +
         "\"protectiveItems\":{\"enabled\":true}," +
         "\"unarmoredRigs\":{\"enabled\":true,\"capacityCutoffs\":[8,12,16,20,24]}," +
-        "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]}}," +
+        "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]},\"weapons\":{\"mode\":\"Inherit\"}}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";
 
     private static string FindRepositoryFile(params string[] parts)

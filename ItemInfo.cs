@@ -791,6 +791,7 @@ public class ItemInfo(
 				    bool isArmor = itemHelper.IsOfBaseclass(itemId, BaseClasses.ARMOR);
 				    bool isRig = itemHelper.IsOfBaseclass(itemId, BaseClasses.VEST);
 				    bool isBackpack = itemHelper.IsOfBaseclass(itemId, BaseClasses.BACKPACK);
+				    bool isWeapon = itemHelper.IsOfBaseclass(itemId, BaseClasses.WEAPON);
 				    var defaultPreset = isArmor || isRig ? presetHelper.GetDefaultPreset(itemId) : null;
 				    var hasDefaultArmorData = isRig && defaultPreset?.Items.Any(item =>
 					    Items.TryGetValue(item.Template, out var armorTemplate) &&
@@ -813,6 +814,7 @@ public class ItemInfo(
 					    traderTierRarity);
 				    var kind = isAmmo ? RecolorItemKind.Ammo
 					    : isBackpack ? RecolorItemKind.Backpack
+					    : isWeapon ? RecolorItemKind.Weapon
 					    : protectiveItem.Kind;
 				    Config.ModRarityRecolor.CustomOverrides.TryGetValue(itemId.ToString(), out int customRarity);
 				    int? defaultFrontPlateClass = null;
@@ -833,6 +835,15 @@ public class ItemInfo(
 						    itemProperties.Width,
 						    itemProperties.Height,
 						    itemProperties.PenetrationPower))
+					    : isWeapon
+						    ? RecolorItemAdapter.FromWeapon(new(
+							    itemId.ToString(),
+							    templateItem.Parent.ToString(),
+							    traderTierRarity,
+							    isBanned,
+							    traderPrice,
+							    itemProperties.Width,
+							    itemProperties.Height))
 					    : kind is RecolorItemKind.Rig or RecolorItemKind.Backpack
 						    ? RecolorItemAdapter.FromContainer(new(
 							    itemId.ToString(),

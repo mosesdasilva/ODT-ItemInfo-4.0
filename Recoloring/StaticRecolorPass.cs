@@ -24,7 +24,8 @@ public sealed class StaticRecolorPass
                 UsePenetrationForAmmoRecolor = configuration.SpecializedClassifiers.Ammunition.Enabled,
                 UseArmorClassForRecolor = configuration.SpecializedClassifiers.ProtectiveItems.Enabled,
                 UseRigCapacityForRecolor = configuration.SpecializedClassifiers.UnarmoredRigs.Enabled,
-                UseBackpackCapacityForRecolor = configuration.SpecializedClassifiers.Backpacks.Enabled
+                UseBackpackCapacityForRecolor = configuration.SpecializedClassifiers.Backpacks.Enabled,
+                WeaponRecolorMode = configuration.SpecializedClassifiers.Weapons.Mode
             },
             new(
                 configuration.TraderBuyValuePerSlotCutoffs,
@@ -57,6 +58,7 @@ public sealed class StaticRecolorPass
 				    RecolorContextualLabelKind.PenetrationTier => ("Penetration Tier", "RecolorPenetrationTier"),
 				    RecolorContextualLabelKind.CapacityTier => ("Capacity Tier", "RecolorCapacityTier"),
 				    RecolorContextualLabelKind.ArmorClass => ("Armor Class", "RecolorArmorClass"),
+				    RecolorContextualLabelKind.TraderTier => ("Trader Tier", "RecolorTraderTier"),
 				    _ when settings.UseTraderBuyPriceForRecolor => ("Value Tier", "RecolorValueTier"),
 				    _ => ("Trader Tier", "RecolorTraderTier")
 			    };
@@ -89,6 +91,8 @@ public sealed class StaticRecolorPass
         RecolorItemKind.Armor or RecolorItemKind.ArmoredRig when settings.UseArmorClassForRecolor => ClassifyArmor(item),
         RecolorItemKind.Rig when settings.UseRigCapacityForRecolor => ClassifyCapacity(item, thresholds.RigCapacity, "rig capacity"),
         RecolorItemKind.Backpack when settings.UseBackpackCapacityForRecolor => ClassifyCapacity(item, thresholds.BackpackCapacity, "backpack capacity"),
+        RecolorItemKind.Weapon when settings.WeaponRecolorMode == WeaponRecolorMode.TraderTier =>
+            new(true, TraderTier(item), ContextualLabelKind: RecolorContextualLabelKind.TraderTier),
         _ => null
     };
 

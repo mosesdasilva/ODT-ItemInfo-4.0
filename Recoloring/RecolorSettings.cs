@@ -8,6 +8,7 @@ public sealed record RecolorSettings
     public bool UseArmorClassForRecolor { get; init; } = true;
     public bool UseRigCapacityForRecolor { get; init; } = true;
     public bool UseBackpackCapacityForRecolor { get; init; } = true;
+    public WeaponRecolorMode WeaponRecolorMode { get; init; } = WeaponRecolorMode.Inherit;
 }
 
 public sealed record RecolorThresholds(

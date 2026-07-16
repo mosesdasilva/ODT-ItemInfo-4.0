@@ -1,0 +1,21 @@
+{
+  "weapon": {
+    "id": "fixture-weapon",
+    "parentId": "weapon-parent",
+    "traderTier": 2,
+    "fleaBanned": false,
+    "bestTraderBuyValue": 50000,
+    "width": 1,
+    "height": 1
+  },
+  "nonWeapon": {
+    "id": "fixture-tool",
+    "parentId": "tool-parent",
+    "kind": "Normal",
+    "traderTier": 2,
+    "fleaBanned": false,
+    "bestTraderBuyValue": 50000,
+    "width": 1,
+    "height": 1
+  }
+}

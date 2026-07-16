@@ -126,7 +126,8 @@ public class ProtectiveItemRecolorIntegrationTests
         "\"ammunition\":{\"enabled\":true,\"penetrationCutoffs\":[20,30,40,50,60]}," +
         "\"protectiveItems\":{\"enabled\":" + protectiveItemsEnabled.ToString().ToLowerInvariant() + "}," +
         "\"unarmoredRigs\":{\"enabled\":true,\"capacityCutoffs\":[8,12,16,20,24]}," +
-        "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]}}," +
+        "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]}," +
+        "\"weapons\":{\"mode\":\"Inherit\"}}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";
 
     private static ProtectiveFixture LoadFixture() =>

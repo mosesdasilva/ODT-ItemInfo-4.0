@@ -1,6 +1,6 @@
 namespace ItemInfo.Recoloring;
 
-public enum RecolorItemKind { Normal, Ammo, Armor, ArmoredRig, Rig, Backpack }
+public enum RecolorItemKind { Normal, Ammo, Armor, ArmoredRig, Rig, Backpack, Weapon }
 
 public sealed record RecolorItem(
     string Id,
@@ -43,6 +43,15 @@ public sealed record ContainerRecolorTemplate(
     IReadOnlyList<ContainerGridTemplate>? DirectGrids,
     bool HasDefaultArmorData = false);
 
+public sealed record WeaponRecolorTemplate(
+    string Id,
+    string ParentId,
+    int TraderTier,
+    bool FleaBanned,
+    double? BestTraderBuyValue,
+    int? Width,
+    int? Height);
+
 public static class RecolorItemAdapter
 {
     public static RecolorItem FromAmmunition(AmmunitionRecolorTemplate template) =>
@@ -72,9 +81,20 @@ public static class RecolorItemAdapter
             DirectGrids: template.DirectGrids?
                 .Select(grid => (grid.CellsH ?? 0, grid.CellsV ?? 0))
                 .ToArray());
+
+    public static RecolorItem FromWeapon(WeaponRecolorTemplate template) =>
+        new(
+            template.Id,
+            template.ParentId,
+            RecolorItemKind.Weapon,
+            template.TraderTier,
+            template.FleaBanned,
+            template.BestTraderBuyValue,
+            template.Width,
+            template.Height);
 }
 
-public enum RecolorContextualLabelKind { BackgroundBasis, PenetrationTier, CapacityTier, ArmorClass }
+public enum RecolorContextualLabelKind { BackgroundBasis, TraderTier, PenetrationTier, CapacityTier, ArmorClass }
 
 public sealed record RecolorResult(
     bool Recolored,

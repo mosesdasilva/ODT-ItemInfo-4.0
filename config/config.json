@@ -37,6 +37,9 @@
 			"backpacks": {
 				"enabled": true,
 				"capacityCutoffs": [12, 20, 25, 30, 40]
+			},
+			"weapons": {
+				"mode": "Inherit"
 			}
 		},
 		"customOverrides": {

@@ -131,7 +131,8 @@ public class CapacityClassificationIntegrationTests
         "\"unarmoredRigs\":{\"enabled\":" + rigEnabled.ToString().ToLowerInvariant() +
         ",\"capacityCutoffs\":[" + string.Join(',', rigCutoffs) + "]}," +
         "\"backpacks\":{\"enabled\":" + backpackEnabled.ToString().ToLowerInvariant() +
-        ",\"capacityCutoffs\":[" + string.Join(',', backpackCutoffs) + "]}}," +
+        ",\"capacityCutoffs\":[" + string.Join(',', backpackCutoffs) + "]}," +
+        "\"weapons\":{\"mode\":\"Inherit\"}}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";
 
     private static string FindRepositoryFile(params string[] parts)

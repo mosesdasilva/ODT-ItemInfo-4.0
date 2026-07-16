@@ -4,6 +4,8 @@ namespace ItemInfo.Recoloring;
 
 public enum BackgroundRecolorBasis { TraderTier, TraderBuyValue }
 
+public enum WeaponRecolorMode { Inherit, TraderTier, WeaponCategory }
+
 public sealed record RecolorDisplay(bool AddColorToName, bool AddContextualLabelToPricesInfo);
 
 public sealed record AmmunitionClassifierConfiguration(bool Enabled, double[] PenetrationCutoffs);
@@ -12,11 +14,14 @@ public sealed record CapacityClassifierConfiguration(bool Enabled, double[] Capa
 
 public sealed record ToggleClassifierConfiguration(bool Enabled);
 
+public sealed record WeaponClassifierConfiguration(WeaponRecolorMode Mode);
+
 public sealed record SpecializedClassifierConfiguration(
     AmmunitionClassifierConfiguration Ammunition,
     ToggleClassifierConfiguration ProtectiveItems,
     CapacityClassifierConfiguration UnarmoredRigs,
-    CapacityClassifierConfiguration Backpacks);
+    CapacityClassifierConfiguration Backpacks,
+    WeaponClassifierConfiguration Weapons);
 
 public sealed record RecolorConfiguration(
     bool Enabled,
@@ -52,7 +57,8 @@ public sealed record RecolorConfiguration(
             new(true, [20, 30, 40, 50, 60]),
             new(true),
             new(true, [8, 12, 16, 20, 24]),
-            new(true, [12, 20, 25, 30, 40])),
+            new(true, [12, 20, 25, 30, 40]),
+            new(WeaponRecolorMode.Inherit)),
         new Dictionary<string, int>(),
         []);
 
@@ -175,7 +181,8 @@ public sealed record RecolorConfiguration(
             ReadAmmunitionClassifier(section, warn),
             ReadProtectiveItemClassifier(section, warn),
             ReadCapacityClassifier(section, "unarmoredRigs", Defaults.SpecializedClassifiers.UnarmoredRigs, warn),
-            ReadCapacityClassifier(section, "backpacks", Defaults.SpecializedClassifiers.Backpacks, warn));
+            ReadCapacityClassifier(section, "backpacks", Defaults.SpecializedClassifiers.Backpacks, warn),
+            ReadWeaponClassifier(section, warn));
     }
 
     private static AmmunitionClassifierConfiguration ReadAmmunitionClassifier(
@@ -247,6 +254,27 @@ public sealed record RecolorConfiguration(
             Defaults.SpecializedClassifiers.ProtectiveItems.Enabled,
             warn,
             $"{path}.enabled"));
+    }
+
+    private static WeaponClassifierConfiguration ReadWeaponClassifier(
+        JsonElement specializedClassifiers,
+        Action<string> warn)
+    {
+        const string path = "RarityRecolor.specializedClassifiers.weapons.mode";
+        if (specializedClassifiers.TryGetProperty("weapons", out var weapons) &&
+            weapons.ValueKind == JsonValueKind.Object &&
+            weapons.TryGetProperty("mode", out var modeElement) &&
+            modeElement.ValueKind == JsonValueKind.String)
+        {
+            var configuredMode = modeElement.GetString();
+            var canonicalMode = Enum.GetNames<WeaponRecolorMode>()
+                .FirstOrDefault(name => string.Equals(name, configuredMode, StringComparison.OrdinalIgnoreCase));
+            if (canonicalMode is not null)
+                return new(Enum.Parse<WeaponRecolorMode>(canonicalMode));
+        }
+
+        warn($"[ItemInfo] Invalid {path}; using Inherit.");
+        return Defaults.SpecializedClassifiers.Weapons;
     }
 
     private static double[] InvalidCutoffs(Action<string> warn)
