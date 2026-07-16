@@ -2,5 +2,5 @@ namespace ItemInfo.Recoloring;
 
 public enum RecolorTier
 {
-    Common = 1, Rare, Epic, Legendary, Uber, Unobtainium, Overpowered, Custom, Custom2
+    Common = 1, Rare, Epic, Legendary, Uber, Unobtainium
 }

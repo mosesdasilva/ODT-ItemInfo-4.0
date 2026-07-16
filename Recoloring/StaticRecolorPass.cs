@@ -22,6 +22,7 @@ public sealed class StaticRecolorPass
             new()
             {
                 UseTraderBuyPriceForRecolor = configuration.UseTraderBuyPriceForRecolor,
+                FleaBanWarning = configuration.FleaBanWarning,
                 UsePenetrationForAmmoRecolor = configuration.SpecializedClassifiers.Ammunition.Enabled,
                 UseArmorClassForRecolor = configuration.SpecializedClassifiers.ProtectiveItems.Enabled,
                 UseRigCapacityForRecolor = configuration.SpecializedClassifiers.UnarmoredRigs.Enabled,
@@ -52,9 +53,13 @@ public sealed class StaticRecolorPass
 	    if (result.Tier is not null)
 	    {
 		    request.ApplyTier(result.Tier.Value);
-		    if (request.ApplyPresentation is not null && tierColors is not null && result.Tier.Value is >= RecolorTier.Common and <= RecolorTier.Unobtainium)
-		    {
-			    var tierNumber = (int)result.Tier.Value;
+	    }
+	    var presentationOverride = result.PresentationOverride;
+	    var hasTierPresentation = result.Tier is >= RecolorTier.Common and <= RecolorTier.Unobtainium;
+	    if (result.Recolored && request.ApplyPresentation is not null && tierColors is not null &&
+	        (hasTierPresentation || presentationOverride?.Color is not null))
+	    {
+			    var tierNumber = hasTierPresentation ? (int)result.Tier!.Value : 0;
 			    var (label, translationKey) = result.ContextualLabelKind switch
 			    {
 				    RecolorContextualLabelKind.PenetrationTier => ("Penetration Tier", "RecolorPenetrationTier"),
@@ -64,17 +69,15 @@ public sealed class StaticRecolorPass
 				    _ when settings.UseTraderBuyPriceForRecolor => ("Value Tier", "RecolorValueTier"),
 				    _ => ("Trader Tier", "RecolorTraderTier")
 			    };
-			    var presentationOverride = result.PresentationOverride;
 			    var displayLabel = presentationOverride?.ContextualLabel ?? label;
 			    var displayTranslationKey = presentationOverride?.ContextualLabelTranslationKey ?? translationKey;
-			    var includeTierNumber = presentationOverride?.IncludeTierNumber ?? true;
+			    var includeTierNumber = presentationOverride?.IncludeTierNumber ?? hasTierPresentation;
 			    var contextualLabel = includeTierNumber ? $"{displayLabel} {tierNumber}" : displayLabel;
 			    request.ApplyPresentation(new(
 				    presentationOverride?.Color ?? tierColors[tierNumber - 1],
 				    contextualLabel,
 				    displayTranslationKey,
 				    includeTierNumber ? tierNumber : 0));
-		    }
 	    }
 	    if (result.Warning is not null && ShouldEmitWarning(request.Item))
 		    warn(result.Warning);
@@ -91,8 +94,14 @@ public sealed class StaticRecolorPass
     {
         if (blacklisted) return new(false, null);
         if (custom is not null) return new(true, custom);
-        if (settings.MarkFleaMarketBannedItemsAsOverpowered && item.FleaBanned)
-            return new(true, RecolorTier.Overpowered);
+        if (settings.FleaBanWarning.Enabled && item.FleaBanned)
+            return new(
+                true,
+                null,
+                PresentationOverride: new(
+                    settings.FleaBanWarning.Color,
+                    "Flea Restricted",
+                    "RecolorFleaRestricted"));
 
         var specialized = ClassifySpecialized(item);
         return specialized ?? ClassifyNormal(item);
@@ -271,11 +280,11 @@ public sealed class StaticRecolorPass
         return (RecolorTier)(index < 0 ? 6 : index + 1);
     }
 
-    private static RecolorTier TierByUpperBounds(double value, double[] bounds, bool overpoweredAboveLast = false)
+    private static RecolorTier TierByUpperBounds(double value, double[] bounds)
     {
         var index = Array.FindIndex(bounds, cutoff => value <= cutoff);
         if (index >= 0) return (RecolorTier)(index + 1);
-        return overpoweredAboveLast ? RecolorTier.Overpowered : RecolorTier.Unobtainium;
+        return RecolorTier.Unobtainium;
     }
 }
 

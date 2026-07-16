@@ -3,7 +3,8 @@ namespace ItemInfo.Recoloring;
 public sealed record RecolorSettings
 {
     public bool UseTraderBuyPriceForRecolor { get; init; }
-    public bool MarkFleaMarketBannedItemsAsOverpowered { get; init; }
+    public FleaBanWarningConfiguration FleaBanWarning { get; init; } =
+        RecolorConfiguration.Defaults.FleaBanWarning;
     public bool UsePenetrationForAmmoRecolor { get; init; } = true;
     public bool UseArmorClassForRecolor { get; init; } = true;
     public bool UseRigCapacityForRecolor { get; init; } = true;

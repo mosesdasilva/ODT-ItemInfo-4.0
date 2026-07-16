@@ -7,6 +7,32 @@ namespace ItemInfo.Tests;
 public class RecolorConfigurationTests
 {
     [Fact]
+    public void Flea_ban_warning_defaults_disabled_with_an_independently_owned_tracer_red_color()
+    {
+        var configuration = RecolorConfiguration.Defaults;
+
+        Assert.False(configuration.FleaBanWarning.Enabled);
+        Assert.Equal("tracerRed", configuration.FleaBanWarning.Color.BackgroundValue);
+        Assert.Equal("red", configuration.TierColors[5].BackgroundValue);
+        Assert.Equal("red", configuration.SpecializedClassifiers.Weapons.CategoryColors[WeaponCategory.Launcher].BackgroundValue);
+    }
+
+    [Fact]
+    public void Flea_ban_warning_loads_its_own_toggle_and_color_without_replacing_tier_or_launcher_colors()
+    {
+        var json = ValidJson().Replace(
+            "\"customOverrides\"",
+            "\"fleaBanWarning\":{\"enabled\":true,\"color\":\"#abc\"},\"customOverrides\"");
+
+        var configuration = RecolorConfiguration.Load(json, [], _ => { });
+
+        Assert.True(configuration.FleaBanWarning.Enabled);
+        Assert.Equal("#AABBCC", configuration.FleaBanWarning.Color.BackgroundValue);
+        Assert.Equal("red", configuration.TierColors[5].BackgroundValue);
+        Assert.Equal("red", configuration.SpecializedClassifiers.Weapons.CategoryColors[WeaponCategory.Launcher].BackgroundValue);
+    }
+
+    [Fact]
     public void Shipped_configuration_loads_without_migration_warnings_and_preserves_unrelated_settings()
     {
         var json = File.ReadAllText(FindRepositoryFile("config", "config.json"));
@@ -189,6 +215,7 @@ public class RecolorConfigurationTests
         "\"protectiveItems\":{\"enabled\":true}," +
         "\"unarmoredRigs\":{\"enabled\":true,\"capacityCutoffs\":[8,12,16,20,24]}," +
         "\"backpacks\":{\"enabled\":true,\"capacityCutoffs\":[12,20,25,30,40]},\"weapons\":{\"mode\":\"Inherit\"}}," +
+        "\"fleaBanWarning\":{\"enabled\":false,\"color\":\"tracerRed\"}," +
         "\"customOverrides\":{\"itemIdToTier\":{}},\"blacklist\":{\"itemOrParentIds\":[]}}}";
 
     private static string FindRepositoryFile(params string[] parts)

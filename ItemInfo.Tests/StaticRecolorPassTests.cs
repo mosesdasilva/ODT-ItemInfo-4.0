@@ -133,21 +133,50 @@ public class StaticRecolorPassTests
     }
 
     [Fact]
-    public void Precedence_is_blacklist_then_custom_then_flea_then_specialized_then_basis()
+    public void Recolor_blacklist_wins_over_custom_rarity_override()
     {
-        var pass = new StaticRecolorPass(new() { MarkFleaMarketBannedItemsAsOverpowered = true, UseTraderBuyPriceForRecolor = true }, RecolorThresholds.Defaults);
-        var ammo = Item(RecolorItemKind.Ammo) with { FleaBanned = true, Penetration = 5, BestTraderBuyValue = 60000 };
-        Assert.False(pass.Classify(ammo, blacklisted: true, custom: RecolorTier.Custom).Recolored);
-        Assert.Equal(RecolorTier.Custom, pass.Classify(ammo, custom: RecolorTier.Custom).Tier);
-        Assert.Equal(RecolorTier.Overpowered, pass.Classify(ammo).Tier);
-        Assert.Equal(RecolorTier.Common, new StaticRecolorPass(new(), RecolorThresholds.Defaults).Classify(ammo).Tier);
+        var result = new StaticRecolorPass(new(), RecolorThresholds.Defaults)
+            .Classify(Item(), blacklisted: true, custom: RecolorTier.Unobtainium);
+
+        Assert.False(result.Recolored);
+        Assert.Null(result.Tier);
+    }
+
+    [Fact]
+    public void Custom_rarity_override_wins_over_flea_ban_warning()
+    {
+        var pass = new StaticRecolorPass(new() { FleaBanWarning = new(true, ColorSpecification.ParseDefault("tracerRed")) }, RecolorThresholds.Defaults);
+        var result = pass.Classify(Item() with { FleaBanned = true }, custom: RecolorTier.Unobtainium);
+
+        Assert.Equal(RecolorTier.Unobtainium, result.Tier);
+        Assert.Null(result.PresentationOverride);
+    }
+
+    [Fact]
+    public void Flea_ban_warning_wins_over_specialized_classification()
+    {
+        var pass = new StaticRecolorPass(new() { FleaBanWarning = new(true, ColorSpecification.ParseDefault("tracerRed")) }, RecolorThresholds.Defaults);
+        var result = pass.Classify(Item(RecolorItemKind.Ammo) with { FleaBanned = true, Penetration = 5 });
+
+        Assert.Null(result.Tier);
+        Assert.Equal("RecolorFleaRestricted", result.PresentationOverride?.ContextualLabelTranslationKey);
+    }
+
+    [Fact]
+    public void Specialized_classification_wins_over_selected_background_recolor_basis()
+    {
+        var pass = new StaticRecolorPass(new() { UseTraderBuyPriceForRecolor = true }, RecolorThresholds.Defaults);
+        var result = pass.Classify(Item(RecolorItemKind.Ammo) with { Penetration = 5, BestTraderBuyValue = 60_000 });
+
+        Assert.Equal(RecolorTier.Common, result.Tier);
+        Assert.Equal(RecolorContextualLabelKind.PenetrationTier, result.ContextualLabelKind);
     }
 
     [Fact]
     public void Disabled_flea_warning_does_not_change_trader_tier_background()
     {
         var banned = Item() with { FleaBanned = true };
-        var result = new StaticRecolorPass(new() { MarkFleaMarketBannedItemsAsOverpowered = false }, RecolorThresholds.Defaults)
+        var result = new StaticRecolorPass(new() { FleaBanWarning = new(false, ColorSpecification.ParseDefault("tracerRed")) }, RecolorThresholds.Defaults)
             .Classify(banned);
         Assert.Equal(RecolorTier.Rare, result.Tier);
     }

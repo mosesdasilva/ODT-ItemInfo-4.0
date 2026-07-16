@@ -18,6 +18,8 @@ public sealed record WeaponClassifierConfiguration(
     WeaponRecolorMode Mode,
     IReadOnlyDictionary<WeaponCategory, ColorSpecification> CategoryColors);
 
+public sealed record FleaBanWarningConfiguration(bool Enabled, ColorSpecification Color);
+
 public sealed record SpecializedClassifierConfiguration(
     AmmunitionClassifierConfiguration Ammunition,
     ToggleClassifierConfiguration ProtectiveItems,
@@ -32,6 +34,7 @@ public sealed record RecolorConfiguration(
     IReadOnlyList<ColorSpecification> TierColors,
     double[] TraderBuyValuePerSlotCutoffs,
     SpecializedClassifierConfiguration SpecializedClassifiers,
+    FleaBanWarningConfiguration FleaBanWarning,
     IReadOnlyDictionary<string, int> CustomOverrides,
     IReadOnlyList<string> Blacklist)
 {
@@ -60,7 +63,8 @@ public sealed record RecolorConfiguration(
     };
     private static readonly HashSet<string> RequiredVnextKeys = new(StringComparer.Ordinal)
     {
-        "enabled", "basis", "display", "tiers", "customOverrides", "blacklist"
+        "enabled", "basis", "display", "tiers", "specializedClassifiers", "fleaBanWarning",
+        "customOverrides", "blacklist"
     };
 
     public static RecolorConfiguration Defaults { get; } = new(
@@ -79,6 +83,7 @@ public sealed record RecolorConfiguration(
                 DefaultWeaponCategoryColorValues.ToDictionary(
                     pair => pair.Key,
                     pair => ColorSpecification.ParseDefault(pair.Value)))),
+        new(false, ColorSpecification.ParseDefault("tracerRed")),
         new Dictionary<string, int>(),
         []);
 
@@ -117,9 +122,10 @@ public sealed record RecolorConfiguration(
             var display = ReadDisplay(root, warn);
             var (colors, cutoffs) = ReadTiers(root, warn);
             var specializedClassifiers = ReadSpecializedClassifiers(root, warn);
+            var fleaBanWarning = ReadFleaBanWarning(root, warn);
             var overrides = ReadOverrides(root, warn);
             var blacklist = ReadBlacklist(root, warn);
-            return new(enabled, basis, display, colors, cutoffs, specializedClassifiers, overrides, blacklist);
+            return new(enabled, basis, display, colors, cutoffs, specializedClassifiers, fleaBanWarning, overrides, blacklist);
         }
         catch (JsonException)
         {
@@ -321,6 +327,21 @@ public sealed record RecolorConfiguration(
             result[category] = fallback;
         }
         return result;
+    }
+
+    private static FleaBanWarningConfiguration ReadFleaBanWarning(JsonElement root, Action<string> warn)
+    {
+        const string path = "RarityRecolor.fleaBanWarning";
+        if (!root.TryGetProperty("fleaBanWarning", out var section) || section.ValueKind != JsonValueKind.Object)
+            return Defaults.FleaBanWarning;
+
+        var enabled = ReadBoolean(section, "enabled", Defaults.FleaBanWarning.Enabled, warn, $"{path}.enabled");
+        if (section.TryGetProperty("color", out var color) && color.ValueKind == JsonValueKind.String &&
+            ColorSpecification.TryParse(color.GetString(), out var parsed))
+            return new(enabled, parsed);
+
+        warn($"[ItemInfo] Invalid Color Specification at {path}.color; using built-in value tracerRed for this field.");
+        return new(enabled, Defaults.FleaBanWarning.Color);
     }
 
     private static double[] InvalidCutoffs(Action<string> warn)
