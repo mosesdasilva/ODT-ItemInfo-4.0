@@ -4,6 +4,10 @@ public enum ProtectiveItemType { BodyArmor, Helmet, FaceCover, Visor, ArmorPlate
 
 public sealed record ProtectiveArmorComponentData(string SlotId, int? ArmorClass);
 
+public sealed record HelmetArmorClassData(
+    int? EffectiveArmorClass,
+    IReadOnlyList<ProtectiveArmorComponentData> RequiredDefaultComponents);
+
 public sealed record ProtectiveTemplateData(
     string Id,
     string Name,
@@ -11,7 +15,8 @@ public sealed record ProtectiveTemplateData(
     int? DirectArmorClass,
     IReadOnlyList<(int Width, int Height)>? DirectGrids = null,
     IReadOnlyList<ProtectiveArmorComponentData>? DefaultPresetComponents = null,
-    IReadOnlyList<ProtectiveArmorComponentData>? RootSlotDefaults = null);
+    IReadOnlyList<ProtectiveArmorComponentData>? RootSlotDefaults = null,
+    IReadOnlyList<string>? RequiredSlotIds = null);
 
 public static class ProtectiveItemAdapter
 {
@@ -33,6 +38,18 @@ public static class ProtectiveItemAdapter
         var defaultFrontPlateClass = SelectArmorClassObservation(template.DefaultPresetComponents, IsFrontPlateSlot);
         var rootSlotDefaultFrontPlateClass = SelectArmorClassObservation(template.RootSlotDefaults, IsFrontPlateSlot);
         var defaultSoftArmorClass = SelectArmorClassObservation(AllDefaultArmorComponents(template), IsSoftArmorFrontSlot);
+        var requiredHelmetComponents = recognizedType == ProtectiveItemType.Helmet
+            ? template.DefaultPresetComponents?
+                .Where(component => IsRequiredSlot(component.SlotId, template.RequiredSlotIds))
+                .ToArray() ?? []
+            : [];
+        var helmetArmorClass = recognizedType == ProtectiveItemType.Helmet
+            ? new HelmetArmorClassData(
+                requiredHelmetComponents
+                    .Where(component => IsValidArmorClass(component.ArmorClass))
+                    .Max(component => component.ArmorClass),
+                requiredHelmetComponents)
+            : null;
         var softArmorClass = IsValidArmorClass(defaultSoftArmorClass)
             ? defaultSoftArmorClass
             : IsValidArmorClass(template.DirectArmorClass)
@@ -42,7 +59,7 @@ public static class ProtectiveItemAdapter
         var kind = recognizedType switch
         {
             ProtectiveItemType.ArmoredRig => RecolorItemKind.ArmoredRig,
-            ProtectiveItemType.BodyArmor => RecolorItemKind.Armor,
+            ProtectiveItemType.BodyArmor or ProtectiveItemType.Helmet => RecolorItemKind.Armor,
             _ when directProtectiveType is not null => RecolorItemKind.Armor,
             _ when DescendsFrom(template.ParentId, VestBaseClass, getParentId) => RecolorItemKind.Rig,
             _ => RecolorItemKind.Normal
@@ -60,7 +77,8 @@ public static class ProtectiveItemAdapter
             DirectGrids: template.DirectGrids,
             Name: template.Name,
             ProtectiveType: recognizedType,
-            RootSlotDefaultFrontPlateClass: rootSlotDefaultFrontPlateClass);
+            RootSlotDefaultFrontPlateClass: rootSlotDefaultFrontPlateClass,
+            HelmetArmorClass: helmetArmorClass);
     }
 
     public static ProtectiveItemType? Recognize(ProtectiveTemplateData template, Func<string, string?> getParentId)
@@ -112,6 +130,10 @@ public static class ProtectiveItemAdapter
 
     private static bool IsSoftArmorFrontSlot(string slotId) =>
         slotId.Equals("soft_armor_front", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsRequiredSlot(string slotId, IReadOnlyList<string>? requiredSlotIds) =>
+        requiredSlotIds?.Any(requiredSlotId =>
+            requiredSlotId.Equals(slotId, StringComparison.OrdinalIgnoreCase)) == true;
 
     private static bool IsValidArmorClass(int? armorClass) => armorClass is >= 1 and <= 6;
 

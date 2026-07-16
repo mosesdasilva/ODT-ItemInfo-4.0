@@ -45,6 +45,66 @@ public class ProtectiveItemRecolorIntegrationTests
     }
 
     [Fact]
+    public void Helmet_with_a_valid_direct_root_class_visibly_uses_that_class()
+    {
+        var item = LoadFixture().CreateRecolorItem("fixture-direct-class-helmet");
+        RecolorTier? visibleTier = null;
+        RecolorPresentation? visiblePresentation = null;
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run(
+            [new(item, tier => visibleTier = tier, ApplyPresentation: value => visiblePresentation = value)],
+            warnings.Add));
+
+        Assert.Equal(RecolorItemKind.Armor, item.Kind);
+        Assert.Equal(RecolorTier.Legendary, result.Tier);
+        Assert.Equal(RecolorTier.Legendary, visibleTier);
+        Assert.Equal("Armor Class 4", Assert.IsType<RecolorPresentation>(visiblePresentation).ContextualLabel);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Helmet_uses_the_highest_required_default_component_and_excludes_optional_attachments()
+    {
+        var item = LoadFixture().CreateRecolorItem("fixture-component-class-helmet");
+        RecolorTier? visibleTier = null;
+        RecolorPresentation? visiblePresentation = null;
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run(
+            [new(item, tier => visibleTier = tier, ApplyPresentation: value => visiblePresentation = value)],
+            warnings.Add));
+
+        Assert.Equal(RecolorTier.Legendary, result.Tier);
+        Assert.Equal(RecolorTier.Legendary, visibleTier);
+        Assert.Equal("Armor Class 4", Assert.IsType<RecolorPresentation>(visiblePresentation).ContextualLabel);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void Exhausted_helmet_sources_warn_once_then_visibly_use_the_selected_basis()
+    {
+        var item = LoadFixture().CreateRecolorItem("fixture-exhausted-helmet");
+        RecolorTier? visibleTier = null;
+        var warnings = new List<string>();
+
+        var result = Assert.Single(new StaticRecolorPass(Configuration()).Run(
+            [new(item, tier => visibleTier = tier)], warnings.Add));
+
+        Assert.Equal(RecolorTier.Rare, result.Tier);
+        Assert.Equal(RecolorTier.Rare, visibleTier);
+        var warning = Assert.Single(warnings);
+        Assert.Contains("Broken intrinsic helmet", warning);
+        Assert.Contains("fixture-exhausted-helmet", warning);
+        Assert.Contains("Helmet", warning);
+        Assert.Contains("direct root armor class was 0, outside 1 through 6", warning);
+        Assert.Contains("required default component Helmet_top was 0, outside 1 through 6", warning);
+        Assert.Contains("required default component Helmet_back was 7, outside 1 through 6", warning);
+        Assert.Contains("selected Background Recolor Basis", warning);
+        Assert.DoesNotContain("mod_equipment_000", warning);
+    }
+
+    [Fact]
     public void Built_in_modular_armor_uses_the_default_front_plate_across_real_slot_casing()
     {
         var fixture = LoadFixture();
@@ -259,7 +319,11 @@ public class ProtectiveItemRecolorIntegrationTests
                     DefaultPresetComponents: template.DefaultPresetComponents?.Select(component =>
                         new ProtectiveArmorComponentData(component.SlotId, component.ArmorClass)).ToArray(),
                     RootSlotDefaults: template.RootSlotDefaults?.Select(component =>
-                        new ProtectiveArmorComponentData(component.SlotId, component.ArmorClass)).ToArray()),
+                        new ProtectiveArmorComponentData(component.SlotId, component.ArmorClass)).ToArray(),
+                    RequiredSlotIds: template.Slots?
+                        .Where(slot => slot.Required)
+                        .Select(slot => slot.Id)
+                        .ToArray()),
                 id => templates.TryGetValue(id, out var parent) ? parent.ParentId : null,
                 traderTier: 2);
         }
@@ -272,7 +336,9 @@ public class ProtectiveItemRecolorIntegrationTests
         int? ArmorClass,
         ProtectiveGridFixture[]? Grids,
         ProtectiveArmorComponentFixture[]? DefaultPresetComponents,
-        ProtectiveArmorComponentFixture[]? RootSlotDefaults);
+        ProtectiveArmorComponentFixture[]? RootSlotDefaults,
+        ProtectiveSlotFixture[]? Slots);
     private sealed record ProtectiveGridFixture(int CellsH, int CellsV);
     private sealed record ProtectiveArmorComponentFixture(string SlotId, int? ArmorClass);
+    private sealed record ProtectiveSlotFixture(string Id, bool Required);
 }

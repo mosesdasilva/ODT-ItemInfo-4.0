@@ -11,6 +11,52 @@
     { "id": "64afc71497cf3a403c01ff38", "name": "Granit Br5 plate", "parentId": "644120aa86ffbe10ee032b6f", "armorClass": 6 },
     { "id": "fixture-body-armor-descendant", "name": "Body armor descendant", "parentId": "5448e54d4bdc2dcc718b4568" },
     { "id": "fixture-helmet-descendant", "name": "Helmet descendant", "parentId": "5a341c4086f77401f2541505" },
+    {
+      "id": "fixture-direct-class-helmet",
+      "name": "Direct class helmet",
+      "parentId": "5a341c4086f77401f2541505",
+      "armorClass": 4,
+      "slots": [
+        { "id": "Helmet_top", "required": true }
+      ],
+      "defaultPresetComponents": [
+        { "slotId": "Helmet_top", "armorClass": 6 }
+      ]
+    },
+    {
+      "id": "fixture-component-class-helmet",
+      "name": "Intrinsic component helmet",
+      "parentId": "5a341c4086f77401f2541505",
+      "armorClass": 0,
+      "slots": [
+        { "id": "Helmet_top", "required": true },
+        { "id": "Helmet_ears", "required": true },
+        { "id": "mod_equipment_000", "required": false },
+        { "id": "mod_nvg", "required": false }
+      ],
+      "defaultPresetComponents": [
+        { "slotId": "Helmet_top", "armorClass": 3 },
+        { "slotId": "Helmet_ears", "armorClass": 4 },
+        { "slotId": "mod_equipment_000", "armorClass": 6 },
+        { "slotId": "mod_nvg", "armorClass": 5 }
+      ]
+    },
+    {
+      "id": "fixture-exhausted-helmet",
+      "name": "Broken intrinsic helmet",
+      "parentId": "5a341c4086f77401f2541505",
+      "armorClass": 0,
+      "slots": [
+        { "id": "Helmet_top", "required": true },
+        { "id": "Helmet_back", "required": true },
+        { "id": "mod_equipment_000", "required": false }
+      ],
+      "defaultPresetComponents": [
+        { "slotId": "Helmet_top", "armorClass": 0 },
+        { "slotId": "Helmet_back", "armorClass": 7 },
+        { "slotId": "mod_equipment_000", "armorClass": null }
+      ]
+    },
     { "id": "fixture-armored-mask", "name": "Atomic Defense mask", "parentId": "5a341c4686f77469e155819e", "armorClass": 4 },
     { "id": "fixture-face-shield", "name": "Fixture face shield", "parentId": "5448e5724bdc2ddf718b4568", "armorClass": 3 },
     { "id": "68a9b601863d2a71fa0494ae", "name": "Galvion Caiman applique", "parentId": "57bef4c42459772e8d35a53b", "armorClass": 4 },

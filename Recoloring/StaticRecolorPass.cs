@@ -169,12 +169,15 @@ public sealed class StaticRecolorPass
 
     private RecolorResult ClassifyArmor(RecolorItem item)
     {
+        var isHelmet = item.ProtectiveType == ProtectiveItemType.Helmet;
         var usesDirectRootArmorClass = item.ProtectiveType is
             ProtectiveItemType.FaceCover or
             ProtectiveItemType.Visor or
             ProtectiveItemType.ArmorPlate or
             ProtectiveItemType.ArmoredEquipment;
-        var armorClass = usesDirectRootArmorClass
+        var armorClass = isHelmet
+            ? FirstValidArmorClass(item.ArmorClass, item.HelmetArmorClass?.EffectiveArmorClass)
+            : usesDirectRootArmorClass
             ? item.ArmorClass
             : FirstValidArmorClass(
                 item.DefaultFrontPlateClass,
@@ -188,7 +191,11 @@ public sealed class StaticRecolorPass
         {
             var normal = ClassifyNormal(item);
             var name = string.IsNullOrWhiteSpace(item.Name) ? "Unknown item" : item.Name;
-            var attemptedSources = usesDirectRootArmorClass
+            var attemptedSources = isHelmet
+                ? string.Join("; ",
+                    ArmorClassFailure("direct root armor class", item.ArmorClass),
+                    HelmetComponentFailures(item.HelmetArmorClass))
+                : usesDirectRootArmorClass
                 ? ArmorClassFailure("direct root armor class", item.ArmorClass)
                 : string.Join("; ",
                     ArmorClassFailure("Default Front Plate Class", item.DefaultFrontPlateClass),
@@ -223,6 +230,12 @@ public sealed class StaticRecolorPass
         armorClass is null
             ? $"{source} was missing"
             : $"{source} was {armorClass.Value}, outside 1 through 6";
+
+    private static string HelmetComponentFailures(HelmetArmorClassData? helmetArmorClass) =>
+        helmetArmorClass?.RequiredDefaultComponents.Count > 0
+            ? string.Join("; ", helmetArmorClass.RequiredDefaultComponents.Select(component =>
+                ArmorClassFailure($"required default component {component.SlotId}", component.ArmorClass)))
+            : "required default protective components were missing";
 
     private RecolorResult ClassifyCapacity(RecolorItem item, double[] bounds, string field)
     {

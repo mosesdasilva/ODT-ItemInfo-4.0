@@ -789,10 +789,17 @@ public class ItemInfo(
 			    {
 				    bool isAmmo = itemHelper.IsOfBaseclass(itemId, BaseClasses.AMMO);
 				    bool isArmor = itemHelper.IsOfBaseclass(itemId, BaseClasses.ARMOR);
+				    bool isHelmet = itemHelper.IsOfBaseclass(itemId, BaseClasses.HEADWEAR);
 				    bool isRig = itemHelper.IsOfBaseclass(itemId, BaseClasses.VEST);
 				    bool isBackpack = itemHelper.IsOfBaseclass(itemId, BaseClasses.BACKPACK);
 				    bool isWeapon = itemHelper.IsOfBaseclass(itemId, BaseClasses.WEAPON);
-				    var defaultPreset = isArmor || isRig ? presetHelper.GetDefaultPreset(itemId) : null;
+				    var defaultPreset = isArmor || isRig || isHelmet ? presetHelper.GetDefaultPreset(itemId) : null;
+				    var requiredSlotIds = itemProperties.Slots?
+					    .Where(slot => slot.Required == true)
+					    .SelectMany(slot => new[] { slot.Name, slot.Id })
+					    .Where(slotId => !string.IsNullOrWhiteSpace(slotId))
+					    .Select(slotId => slotId!)
+					    .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
 				    var defaultPresetRoot = defaultPreset?.Items.FirstOrDefault(item =>
 					    item.Template == itemId && string.IsNullOrEmpty(item.ParentId));
 				    var defaultPresetComponents = defaultPresetRoot is null
@@ -828,7 +835,8 @@ public class ItemInfo(
 						    itemProperties.ArmorClass,
 						    grids,
 						    DefaultPresetComponents: defaultPresetComponents,
-						    RootSlotDefaults: rootSlotDefaults),
+						    RootSlotDefaults: rootSlotDefaults,
+						    RequiredSlotIds: requiredSlotIds.ToArray()),
 					    id => parentByItemId.TryGetValue(id, out var parentId) ? parentId : null,
 					    traderTierRarity);
 				    var kind = isAmmo ? RecolorItemKind.Ammo
