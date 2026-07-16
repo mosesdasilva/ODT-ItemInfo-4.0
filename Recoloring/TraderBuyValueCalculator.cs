@@ -14,8 +14,15 @@ public sealed record BestTraderBuyValue(double Roubles, string TraderName)
     public static BestTraderBuyValue Unsellable { get; } = new(0, "None");
 }
 
+public sealed record BaseWeaponTraderOffers(
+    IReadOnlyList<TraderBuyOffer> BaseTemplateOffers,
+    IReadOnlyList<TraderBuyOffer> DefaultPresetComponentOffers);
+
 public static class TraderBuyValueCalculator
 {
+    public static BestTraderBuyValue SelectBaseWeaponValue(BaseWeaponTraderOffers offers) =>
+        SelectHighest(offers.BaseTemplateOffers);
+
     public static BestTraderBuyValue SelectHighest(IEnumerable<TraderBuyOffer> offers)
     {
         return offers

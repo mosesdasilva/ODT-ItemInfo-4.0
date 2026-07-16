@@ -1,0 +1,65 @@
+{
+  "UserLocale": "fr",
+  "PricesInfo": {
+    "enabled": false,
+    "addFleaPrice": true,
+    "addItemValue": true
+  },
+  "UnrelatedFixtureSetting": "preserved",
+  "RarityRecolor": {
+    "enabled": true,
+    "basis": "TraderBuyValue",
+    "display": {
+      "addColorToName": false,
+      "addContextualLabelToPricesInfo": true
+    },
+    "tiers": {
+      "colors": ["default", "#123456", "blue", "violet", "orange", "red"],
+      "traderBuyValuePerSlotCutoffs": [10000, 15000, 20000, 40000, 60000]
+    },
+    "specializedClassifiers": {
+      "ammunition": {
+        "enabled": true,
+        "penetrationCutoffs": [20, 30, 40, 50, 60]
+      },
+      "protectiveItems": {
+        "enabled": true
+      },
+      "unarmoredRigs": {
+        "enabled": true,
+        "capacityCutoffs": [8, 12, 16, 20, 24]
+      },
+      "backpacks": {
+        "enabled": true,
+        "capacityCutoffs": [12, 20, 25, 30, 40]
+      },
+      "weapons": {
+        "mode": "WeaponCategory",
+        "categoryColors": {
+          "pistol": "default",
+          "revolver": "default",
+          "submachineGun": "green",
+          "shotgun": "green",
+          "assaultCarbine": "blue",
+          "assaultRifle": "blue",
+          "machineGun": "blue",
+          "marksmanRifle": "violet",
+          "sniperRifle": "orange",
+          "launcher": "#AABBCC"
+        }
+      }
+    },
+    "fleaBanWarning": {
+      "enabled": true,
+      "color": "tracerRed"
+    },
+    "customOverrides": {
+      "itemIdToTier": {
+        "migrated-override": 4
+      }
+    },
+    "blacklist": {
+      "itemOrParentIds": ["migrated-item", "migrated-parent"]
+    }
+  }
+}
