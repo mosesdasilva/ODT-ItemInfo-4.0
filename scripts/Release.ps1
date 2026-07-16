@@ -37,13 +37,7 @@ if (-not [string]::Equals($projectVersion, $runtimeVersion, [StringComparison]::
 }
 
 $modRoot = 'SPT/user/mods/ODT-ItemInfo-4.0'
-$expectedEntries = @(
-    "$modRoot/$assemblyName.dll",
-    "$modRoot/LICENSE",
-    "$modRoot/config/bsgblacklist.json",
-    "$modRoot/config/config.json",
-    "$modRoot/config/translations.json"
-)
+$expectedEntries = @(Get-ExpectedReleaseEntries -AssemblyName $assemblyName)
 $releaseAssembly = Join-Path $repositoryRoot "bin\Release\$assemblyName\$assemblyName.dll"
 
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {

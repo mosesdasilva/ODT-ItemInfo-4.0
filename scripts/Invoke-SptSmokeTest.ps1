@@ -9,6 +9,7 @@ param(
     [string] $BuildExecutable = 'dotnet',
     [string] $BuildArguments,
     [string] $BuildOutputPath,
+    [string] $ReleaseCandidateArchive,
     [string] $ServerExecutable,
     [string] $ServerArguments = ''
 )
@@ -44,6 +45,9 @@ $outcome = 'failed'
 $failureMessage = $null
 $startedAt = [DateTime]::UtcNow
 $stages = [Collections.Generic.List[object]]::new()
+$releaseCandidate = $null
+$sptVersion = $null
+$expectedReleaseEntries = @(Get-ExpectedReleaseEntries -AssemblyName 'ODT-ItemInfo-4.0')
 
 try {
     $ClonePath = Assert-SptTestClone -ClonePath $ClonePath -RepositoryRoot $repositoryRoot
@@ -62,39 +66,58 @@ try {
         throw
     }
 
-    try {
-        Invoke-SptModBuild `
-            -RepositoryRoot $repositoryRoot `
-            -BuildExecutable $BuildExecutable `
-            -BuildArguments $BuildArguments `
-            -BuildOutputPath $BuildOutputPath `
-            -ReportDirectory $reportDirectory
-        $stages.Add([pscustomobject]@{ name = 'build'; outcome = 'passed' })
-    }
-    catch {
-        $exitCode = 20
-        $failureKind = 'build-failure'
-        throw
-    }
+    if ([string]::IsNullOrWhiteSpace($ReleaseCandidateArchive)) {
+        try {
+            Invoke-SptModBuild `
+                -RepositoryRoot $repositoryRoot `
+                -BuildExecutable $BuildExecutable `
+                -BuildArguments $BuildArguments `
+                -BuildOutputPath $BuildOutputPath `
+                -ReportDirectory $reportDirectory
+            $stages.Add([pscustomobject]@{ name = 'build'; outcome = 'passed' })
+        }
+        catch {
+            $exitCode = 20
+            $failureKind = 'build-failure'
+            throw
+        }
 
-    try {
-        Install-SptModOutput `
-            -RepositoryRoot $repositoryRoot `
-            -BuildOutputPath $BuildOutputPath `
-            -ClonePath $ClonePath `
-            -ModName 'ODT-ItemInfo-4.0'
-        $stages.Add([pscustomobject]@{ name = 'install'; outcome = 'passed' })
+        try {
+            Install-SptModOutput `
+                -RepositoryRoot $repositoryRoot `
+                -BuildOutputPath $BuildOutputPath `
+                -ClonePath $ClonePath `
+                -ModName 'ODT-ItemInfo-4.0'
+            $stages.Add([pscustomobject]@{ name = 'install'; outcome = 'passed'; source = 'build-output' })
+        }
+        catch {
+            $exitCode = 30
+            $failureKind = 'install-failure'
+            throw
+        }
     }
-    catch {
-        $exitCode = 30
-        $failureKind = 'install-failure'
-        throw
+    else {
+        try {
+            $releaseCandidate = Get-SptReleaseArchiveIdentity -ArchivePath $ReleaseCandidateArchive -ExpectedEntries $expectedReleaseEntries
+            Install-SptReleaseCandidate -ArchivePath $releaseCandidate.path -ClonePath $ClonePath -ExpectedEntries $expectedReleaseEntries
+            $installedFiles = @(Assert-SptInstalledRelease -ArchivePath $releaseCandidate.path -ClonePath $ClonePath -ExpectedEntries $expectedReleaseEntries)
+            $releaseCandidate | Add-Member -NotePropertyName installedFiles -NotePropertyValue $installedFiles
+            $stages.Add([pscustomobject]@{ name = 'install'; outcome = 'passed'; source = 'release-candidate-zip' })
+            $stages.Add([pscustomobject]@{ name = 'installed-byte-identity'; outcome = 'passed'; fileCount = $installedFiles.Count })
+        }
+        catch {
+            $exitCode = 30
+            $failureKind = 'install-failure'
+            throw
+        }
     }
 
     $serverWorkingDirectory = $ClonePath
     if ([string]::IsNullOrWhiteSpace($ServerExecutable)) {
         $ServerExecutable = Join-Path $ClonePath 'SPT\SPT.Server.exe'
         $serverWorkingDirectory = Join-Path $ClonePath 'SPT'
+        $sptVersion = Assert-SptServerVersion -ServerExecutable $ServerExecutable -ExpectedVersion '4.0.13'
+        $stages.Add([pscustomobject]@{ name = 'spt-version'; outcome = 'passed'; version = $sptVersion })
     }
     else {
         $serverCommand = Get-Command $ServerExecutable -CommandType Application -ErrorAction SilentlyContinue
@@ -149,9 +172,6 @@ try {
             throw 'SPT server reported a fatal error.'
         }
         if ($serverOutput -match '(?i)Server has started, happy playing') {
-            $exitCode = 0
-            $failureKind = $null
-            $outcome = 'passed'
             $stages.Add([pscustomobject]@{ name = 'readiness'; outcome = 'passed' })
             break
         }
@@ -166,6 +186,20 @@ try {
             throw "SPT server did not become ready within $TimeoutSeconds seconds."
         }
     }
+
+    if ($null -ne $releaseCandidate) {
+        $postSmokeIdentity = Get-SptReleaseArchiveIdentity -ArchivePath $releaseCandidate.path -ExpectedEntries $expectedReleaseEntries
+        if ($postSmokeIdentity.sha256 -ne $releaseCandidate.sha256) {
+            $exitCode = 30
+            $failureKind = 'install-failure'
+            throw 'Release Candidate Artifact changed during the smoke run; release readiness must restart.'
+        }
+        $null = @(Assert-SptInstalledRelease -ArchivePath $releaseCandidate.path -ClonePath $ClonePath -ExpectedEntries $expectedReleaseEntries)
+        $stages.Add([pscustomobject]@{ name = 'post-smoke-byte-identity'; outcome = 'passed'; fileCount = $releaseCandidate.fileCount })
+    }
+    $exitCode = 0
+    $failureKind = $null
+    $outcome = 'passed'
 }
 catch {
     $failureMessage = $_.Exception.Message
@@ -194,7 +228,9 @@ finally {
         failureKind = $failureKind
         failureMessage = $failureMessage
         clonePath = [IO.Path]::GetFullPath($ClonePath)
-        buildOutputPath = [IO.Path]::GetFullPath($BuildOutputPath)
+        buildOutputPath = if ([string]::IsNullOrWhiteSpace($ReleaseCandidateArchive)) { [IO.Path]::GetFullPath($BuildOutputPath) } else { $null }
+        releaseCandidate = $releaseCandidate
+        sptVersion = $sptVersion
         reportDirectory = $reportDirectory
         startedAtUtc = $startedAt.ToString('o')
         finishedAtUtc = [DateTime]::UtcNow.ToString('o')

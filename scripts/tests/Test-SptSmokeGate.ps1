@@ -12,6 +12,8 @@ $clonePath = Join-Path $testRoot 'clone'
 $sourcePath = Join-Path $testRoot 'source'
 $buildOutput = Join-Path $testRoot 'build-output'
 $reportRoot = Join-Path $testRoot 'reports'
+$releaseArchive = Join-Path $testRoot 'ODT-ItemInfo-4.0_2.0.14.zip'
+$releaseStage = Join-Path $testRoot 'release-stage'
 
 if (-not $testRoot.StartsWith($repositoryRoot, [StringComparison]::OrdinalIgnoreCase)) {
     throw "Refusing to use a test directory outside the repository: $testRoot"
@@ -55,6 +57,22 @@ if (-not (Test-Path -LiteralPath $smokeScript -PathType Leaf)) {
     throw "Smoke CLI is missing: $smokeScript"
 }
 
+$hostExecutable = Join-Path $PSHOME 'powershell.exe'
+$hostVersion = (Get-Item -LiteralPath $hostExecutable).VersionInfo.FileVersion
+if ((Assert-SptServerVersion -ServerExecutable $hostExecutable -ExpectedVersion $hostVersion) -ne $hostVersion) {
+    throw 'SPT version preflight did not return the proven executable version.'
+}
+$wrongVersionRejected = $false
+try {
+    Assert-SptServerVersion -ServerExecutable $hostExecutable -ExpectedVersion '4.0.13'
+}
+catch {
+    $wrongVersionRejected = $true
+}
+if (-not $wrongVersionRejected) {
+    throw 'SPT version preflight accepted an executable with the wrong version.'
+}
+
 function Invoke-SmokeFixture {
     param(
         [Parameter(Mandatory)]
@@ -66,22 +84,31 @@ function Invoke-SmokeFixture {
         [AllowNull()]
         [string] $ExpectedFailureKind,
 
-        [int] $TimeoutSeconds = 5
+        [int] $TimeoutSeconds = 5,
+
+        [string] $ReleaseCandidateArchive
     )
 
     $buildArguments = "-NoProfile -ExecutionPolicy Bypass -File `"$fakeBuild`" -OutputPath `"$buildOutput`""
     $fakeServerLog = Join-Path $clonePath 'SPT\user\logs\spt\fake-server.log'
     $serverArguments = "-NoProfile -ExecutionPolicy Bypass -File `"$fakeServer`" -Mode $Mode -LogPath `"$fakeServerLog`" -ClonePath `"$clonePath`""
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $smokeScript `
-        -ClonePath $clonePath `
-        -ReportRoot $reportRoot `
-        -ServerPort $serverPort `
-        -TimeoutSeconds $TimeoutSeconds `
-        -BuildExecutable 'powershell.exe' `
-        -BuildArguments $buildArguments `
-        -BuildOutputPath $buildOutput `
-        -ServerExecutable 'powershell.exe' `
-        -ServerArguments $serverArguments
+    $smokeArguments = @{
+        ClonePath = $clonePath
+        ReportRoot = $reportRoot
+        ServerPort = $serverPort
+        TimeoutSeconds = $TimeoutSeconds
+        ServerExecutable = 'powershell.exe'
+        ServerArguments = $serverArguments
+    }
+    if ([string]::IsNullOrWhiteSpace($ReleaseCandidateArchive)) {
+        $smokeArguments.BuildExecutable = 'powershell.exe'
+        $smokeArguments.BuildArguments = $buildArguments
+        $smokeArguments.BuildOutputPath = $buildOutput
+    }
+    else {
+        $smokeArguments.ReleaseCandidateArchive = $ReleaseCandidateArchive
+    }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $smokeScript @smokeArguments
     $actualExitCode = $LASTEXITCODE
     if ($actualExitCode -ne $ExpectedExitCode) {
         throw "$Mode smoke run exited $actualExitCode; expected $ExpectedExitCode."
@@ -151,6 +178,55 @@ if (Test-Path -LiteralPath (Join-Path $clonePath 'Logs\stale.log')) {
 }
 if ((Get-Content -Raw -LiteralPath (Join-Path $clonePath 'BepInEx\LogOutput.log')).Trim() -ne 'current BepInEx log') {
     throw 'Prior BepInEx log survived reset or current output was lost.'
+}
+
+$expectedReleaseEntries = @(Get-ExpectedReleaseEntries -AssemblyName 'ODT-ItemInfo-4.0')
+foreach ($entry in $expectedReleaseEntries) {
+    $path = Join-Path $releaseStage $entry.Replace('/', '\')
+    New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
+    Set-Content -LiteralPath $path -Value "fixture bytes for $entry" -Encoding UTF8
+}
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [IO.Compression.ZipFile]::Open($releaseArchive, [IO.Compression.ZipArchiveMode]::Create)
+try {
+    foreach ($entry in $expectedReleaseEntries) {
+        [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $archive,
+            (Join-Path $releaseStage $entry.Replace('/', '\')),
+            $entry,
+            [IO.Compression.CompressionLevel]::Optimal
+        ) | Out-Null
+    }
+}
+finally {
+    $archive.Dispose()
+}
+
+Invoke-SmokeFixture -Mode Ready -ExpectedExitCode 0 -ExpectedFailureKind $null -ReleaseCandidateArchive $releaseArchive
+$candidateReport = $script:LastSmokeReport
+if ($candidateReport.releaseCandidate.fileCount -ne 5 -or $candidateReport.releaseCandidate.version -ne '2.0.14') {
+    throw 'Release Candidate Artifact smoke did not record the evaluated candidate version and exact five-file count.'
+}
+if (@($candidateReport.releaseCandidate.installedFiles).Count -ne 5 -or
+    @($candidateReport.releaseCandidate.installedFiles | Where-Object { -not $_.byteIdentical }).Count -ne 0) {
+    throw 'Release Candidate Artifact smoke did not prove every installed file byte-identical to the ZIP.'
+}
+if (@($candidateReport.stages | Where-Object name -eq 'build').Count -ne 0) {
+    throw 'Release Candidate Artifact smoke rebuilt loose output instead of testing the supplied ZIP.'
+}
+
+$installedConfiguration = Join-Path $clonePath 'SPT\user\mods\ODT-ItemInfo-4.0\config\config.json'
+Add-Content -LiteralPath $installedConfiguration -Value 'tampered after install'
+$tamperRejected = $false
+try {
+    Assert-SptInstalledRelease -ArchivePath $releaseArchive -ClonePath $clonePath -ExpectedEntries $expectedReleaseEntries
+}
+catch {
+    $tamperRejected = $true
+}
+if (-not $tamperRejected) {
+    throw 'Installed-byte verification accepted a file that no longer matched the ZIP.'
 }
 
 Invoke-SmokeFixture -Mode Fatal -ExpectedExitCode 40 -ExpectedFailureKind 'fatal-server-error'

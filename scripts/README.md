@@ -67,6 +67,26 @@ configuration failure, `43` server exited before readiness, `44` timeout, `50`
 start failure, and `51` stop failure.
 Use `-ServerPort` when another isolated test instance already owns port `6970`.
 
+## Seal and smoke the exact Release Candidate Artifact
+
+After the implementation is final, run the complete readiness sequence with
+Windows PowerShell 5.1:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-ReleaseReadiness.ps1
+```
+
+This command runs the exact release gate, records the versioned ZIP's path,
+evaluated version, SHA-256, and five-file count, clean-installs that ZIP into
+the SPT Test Clone, proves installed membership and byte identity, and runs
+the SPT 4.0.13 smoke gate without rebuilding or replacing the installed bytes.
+It retains release logs, server logs, `smoke-report.json`, and `readiness.json`
+under `artifacts\release-readiness\<run-id>`.
+
+Any code, project, configuration, translation, license, dependency-version,
+release-script, archive, or installed-byte change invalidates the candidate;
+run the complete readiness command again after such a change.
+
 ## Regression tests
 
 Provisioning, smoke, and build regressions all run from an ordinary Windows
@@ -75,5 +95,6 @@ PowerShell 5.1 shell.
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\Test-NewSptShallowClone.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\Test-SptSmokeGate.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\Test-ReleaseReadinessGate.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\Test-BuildExcludesArtifacts.ps1
 ```

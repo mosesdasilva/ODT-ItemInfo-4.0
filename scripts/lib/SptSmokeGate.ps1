@@ -1,5 +1,7 @@
 Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot 'ReleaseGate.ps1')
+
 function Get-FullPath {
     param(
         [Parameter(Mandatory)]
@@ -309,6 +311,148 @@ function Install-SptModOutput {
     Copy-Item -LiteralPath (Join-Path $BuildOutputPath 'ODT-ItemInfo-4.0.dll') -Destination $destination -Force
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination $destination -Force
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'config') -Destination $destination -Recurse -Force
+}
+
+function Assert-SptServerVersion {
+    param(
+        [Parameter(Mandatory)]
+        [string] $ServerExecutable,
+
+        [Parameter(Mandatory)]
+        [string] $ExpectedVersion
+    )
+
+    if (-not (Test-Path -LiteralPath $ServerExecutable -PathType Leaf)) {
+        throw "SPT server executable was not found for version preflight: $ServerExecutable"
+    }
+    $actualVersion = [string] (Get-Item -LiteralPath $ServerExecutable).VersionInfo.FileVersion
+    if (-not [string]::Equals($actualVersion, $ExpectedVersion, [StringComparison]::Ordinal)) {
+        throw "SPT server version '$actualVersion' does not equal required version '$ExpectedVersion': $ServerExecutable"
+    }
+    return $actualVersion
+}
+
+function Get-SptReleaseArchiveIdentity {
+    param(
+        [Parameter(Mandatory)]
+        [string] $ArchivePath,
+
+        [Parameter(Mandatory)]
+        [string[]] $ExpectedEntries
+    )
+
+    $archivePath = Get-FullPath $ArchivePath
+    if (-not (Test-Path -LiteralPath $archivePath -PathType Leaf)) {
+        throw "Release Candidate Artifact does not exist: $archivePath"
+    }
+    $fileName = [IO.Path]::GetFileName($archivePath)
+    $nameMatch = [regex]::Match($fileName, '^ODT-ItemInfo-4\.0_(.+)\.zip$', [Text.RegularExpressions.RegexOptions]::CultureInvariant)
+    if (-not $nameMatch.Success -or [string]::IsNullOrWhiteSpace($nameMatch.Groups[1].Value)) {
+        throw "Release Candidate Artifact name does not contain an evaluated version: $fileName"
+    }
+
+    $archive = [IO.Compression.ZipFile]::OpenRead($archivePath)
+    try {
+        $entryNames = @()
+        $entryHashes = [Collections.Generic.List[object]]::new()
+        foreach ($entry in $archive.Entries) {
+            $normalized = Assert-SafeReleaseEntryPath -EntryPath $entry.FullName
+            $entryNames += $normalized
+            $stream = $entry.Open()
+            $hasher = [Security.Cryptography.SHA256]::Create()
+            try {
+                $hash = [BitConverter]::ToString($hasher.ComputeHash($stream)).Replace('-', '')
+            }
+            finally {
+                $hasher.Dispose()
+                $stream.Dispose()
+            }
+            $entryHashes.Add([pscustomobject]@{
+                path = $normalized
+                sha256 = $hash
+            })
+        }
+        Assert-ExactReleaseMembership -ActualEntries $entryNames -ExpectedEntries $ExpectedEntries -Location 'Release Candidate Artifact'
+        return [pscustomobject]@{
+            path = $archivePath
+            version = $nameMatch.Groups[1].Value
+            sha256 = Get-ReleaseFileHash -Path $archivePath
+            fileCount = $entryNames.Count
+            entries = @($entryHashes)
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
+function Install-SptReleaseCandidate {
+    param(
+        [Parameter(Mandatory)]
+        [string] $ArchivePath,
+
+        [Parameter(Mandatory)]
+        [string] $ClonePath,
+
+        [Parameter(Mandatory)]
+        [string[]] $ExpectedEntries
+    )
+
+    $clone = Get-FullPath $ClonePath
+    $identity = Get-SptReleaseArchiveIdentity -ArchivePath $ArchivePath -ExpectedEntries $ExpectedEntries
+    $archive = [IO.Compression.ZipFile]::OpenRead($identity.path)
+    try {
+        foreach ($entry in $archive.Entries) {
+            $normalized = Assert-SafeReleaseEntryPath -EntryPath $entry.FullName
+            $destination = Get-FullPath (Join-Path $clone $normalized.Replace('/', '\'))
+            if (-not $destination.StartsWith("$clone\", [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Release Candidate Artifact entry resolves outside the SPT Test Clone: $normalized"
+            }
+            New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+            [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destination, $false)
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
+function Assert-SptInstalledRelease {
+    param(
+        [Parameter(Mandatory)]
+        [string] $ArchivePath,
+
+        [Parameter(Mandatory)]
+        [string] $ClonePath,
+
+        [Parameter(Mandatory)]
+        [string[]] $ExpectedEntries
+    )
+
+    $clone = Get-FullPath $ClonePath
+    $identity = Get-SptReleaseArchiveIdentity -ArchivePath $ArchivePath -ExpectedEntries $ExpectedEntries
+    $installedEntries = @(
+        Get-ChildItem -LiteralPath (Join-Path $clone 'SPT\user\mods\ODT-ItemInfo-4.0') -File -Recurse | ForEach-Object {
+            $_.FullName.Substring($clone.Length + 1).Replace('\', '/')
+        }
+    )
+    Assert-ExactReleaseMembership -ActualEntries $installedEntries -ExpectedEntries $ExpectedEntries -Location 'Installed Release Candidate Artifact'
+
+    $results = [Collections.Generic.List[object]]::new()
+    foreach ($entry in $identity.entries) {
+        $installedPath = Join-Path $clone $entry.path.Replace('/', '\')
+        $installedHash = Get-ReleaseFileHash -Path $installedPath
+        if ($installedHash -ne $entry.sha256) {
+            throw "Installed bytes do not match the Release Candidate Artifact for '$($entry.path)'."
+        }
+        $results.Add([pscustomobject]@{
+            path = $entry.path
+            archiveSha256 = $entry.sha256
+            installedSha256 = $installedHash
+            byteIdentical = $true
+        })
+    }
+    return @($results)
 }
 
 function Get-SptServerOutput {

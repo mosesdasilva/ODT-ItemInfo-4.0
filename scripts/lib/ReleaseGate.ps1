@@ -10,6 +10,22 @@ function Get-ReleaseFileHash {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
 }
 
+function Get-ExpectedReleaseEntries {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $AssemblyName
+    )
+
+    $modRoot = 'SPT/user/mods/ODT-ItemInfo-4.0'
+    return @(
+        "$modRoot/$AssemblyName.dll",
+        "$modRoot/LICENSE",
+        "$modRoot/config/bsgblacklist.json",
+        "$modRoot/config/config.json",
+        "$modRoot/config/translations.json"
+    )
+}
+
 function Assert-SafeReleaseEntryPath {
     param([Parameter(Mandatory = $true)][string] $EntryPath)
 
